@@ -1,22 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://bqqkuxehwaaxkgqqsrnq.supabase.co';
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxcWt1eGVod2FheGtncXFzcm5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5Mzg4OTYsImV4cCI6MjA5NzUxNDg5Nn0.NilEF_V1R0He6yoFwGO-MTLQ7CeyzhQQKfRENMKPQEY';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase URL or Anon Key not set. Check .env.local');
-}
-
-export const supabase = createClient(
-  supabaseUrl || 'https://bqqkuxehwaaxkgqqsrnq.supabase.co',
-  supabaseAnonKey || '',
-  {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-    },
-  }
-);
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+  },
+});
 
 // Helper: Upload image to Supabase Storage
 export async function uploadImage(file: File, bucket: string = 'properties'): Promise<string | null> {
