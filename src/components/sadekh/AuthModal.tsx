@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { t, type Lang } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogIn, Mail, Lock, User, Eye, EyeOff, Globe } from 'lucide-react';
+import { LogIn, Mail, Lock, User, Eye, EyeOff, Globe, Loader2, AlertCircle } from 'lucide-react';
 
 interface AuthModalProps {
   open: boolean;
@@ -24,29 +24,91 @@ export default function AuthModal({ open, onClose, lang, onLogin }: AuthModalPro
   const [fullName, setFullName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const checkSession = async () => {
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'session' }),
+      });
+      const data = await res.json();
+      if (data.user) {
+        onLogin(data.user);
+        onClose();
+      }
+    } catch {}
+  };
+
+  // Check for existing session on mount
+  useEffect(() => {
+    if (open) checkSession();
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Simulate auth - in production this calls Supabase auth
-    setTimeout(() => {
-      onLogin({ email, name: fullName || email.split('@')[0], id: 'current-user' });
+    setError('');
+
+    try {
+      const action = mode === 'login' ? 'login' : 'register';
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, email, password, fullName }),
+      });
+      const data = await res.json();
+
+      if (data.error) {
+        setError(data.error);
+        setLoading(false);
+        return;
+      }
+
+      if (mode === 'register') {
+        setError('');
+        setLoading(false);
+        setMode('login');
+        setPassword('');
+        return;
+      }
+
+      if (data.user) {
+        onLogin(data.user);
+        setLoading(false);
+        onClose();
+      }
+    } catch (err: any) {
+      setError(err.message || 'Erreur de connexion');
       setLoading(false);
-      onClose();
-    }, 1000);
+    }
   };
 
   const handleGoogleAuth = async () => {
     setLoading(true);
-    setTimeout(() => {
-      onLogin({ email: 'user@gmail.com', name: 'Utilisateur Google', id: 'google-user' });
+    setError('');
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'google' }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setError('Google auth non configuré');
+        setLoading(false);
+      }
+    } catch {
+      setError('Erreur Google Auth');
       setLoading(false);
-      onClose();
-    }, 800);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -56,6 +118,13 @@ export default function AuthModal({ open, onClose, lang, onLogin }: AuthModalPro
             {mode === 'login' ? t('nav.login', lang) : 'Créer un compte'}
           </DialogTitle>
         </DialogHeader>
+
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm p-3 rounded-lg flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {mode === 'register' && (
@@ -81,7 +150,7 @@ export default function AuthModal({ open, onClose, lang, onLogin }: AuthModalPro
               <Input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); setError(''); }}
                 placeholder="votre@email.com"
                 className="pl-10"
                 required
@@ -96,7 +165,7 @@ export default function AuthModal({ open, onClose, lang, onLogin }: AuthModalPro
               <Input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { setPassword(e.target.value); setError(''); }}
                 placeholder="••••••••"
                 className="pl-10 pr-10"
                 required
@@ -114,8 +183,9 @@ export default function AuthModal({ open, onClose, lang, onLogin }: AuthModalPro
 
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? (
-              <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-            ) : mode === 'login' ? t('nav.login', lang) : 'Créer mon compte'}
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            ) : null}
+            {mode === 'login' ? t('nav.login', lang) : 'Créer mon compte'}
           </Button>
 
           <div className="relative">
@@ -132,7 +202,7 @@ export default function AuthModal({ open, onClose, lang, onLogin }: AuthModalPro
             {mode === 'login' ? 'Pas de compte ?' : 'Déjà un compte ?'}{' '}
             <button
               type="button"
-              onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
+              onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); }}
               className="text-primary font-medium hover:underline"
             >
               {mode === 'login' ? 'Créer un compte' : t('nav.login', lang)}

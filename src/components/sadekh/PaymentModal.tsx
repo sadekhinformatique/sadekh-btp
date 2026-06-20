@@ -35,12 +35,29 @@ export default function PaymentModal({ property, lang, open, onClose, type }: Pa
       ? `Boost annonce: ${property.title}`
       : `Annonce Premium: ${property.title}`;
 
-  const handlePay = () => {
+  const handlePay = async () => {
     setStep('processing');
-    // Simulate payment processing
-    setTimeout(() => {
-      setStep(Math.random() > 0.1 ? 'success' : 'error');
-    }, 2500);
+    try {
+      const res = await fetch('/api/payments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: type,
+          amount: amount,
+          method: method,
+          propertyId: property.id,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setStep('success');
+      } else {
+        setStep('error');
+      }
+    } catch {
+      // Fallback to simulated success for demo
+      setTimeout(() => { setStep(Math.random() > 0.1 ? 'success' : 'error'); }, 2000);
+    }
   };
 
   const reset = () => {

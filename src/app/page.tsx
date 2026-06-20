@@ -155,6 +155,11 @@ function SadekhApp() {
   const [paymentProperty, setPaymentProperty] = useState<Property | null>(null);
   const [paymentType, setPaymentType] = useState<'boost' | 'plan' | 'premium'>('boost');
   const [showAlertPanel, setShowAlertPanel] = useState(false);
+  const [newAlert, setNewAlert] = useState({ type: 'all', region: 'Dakar', maxPrice: '' });
+  const [alertCreating, setAlertCreating] = useState(false);
+  const [msgText, setMsgText] = useState('');
+  const [sendingMsg, setSendingMsg] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
   // Fetch properties
   const { data: propertiesData, isLoading: loadingProperties } = useQuery({
@@ -191,6 +196,25 @@ function SadekhApp() {
       const res = await fetch('/api/messages');
       return res.json() as Promise<Message[]>;
     },
+  });
+
+  // Fetch alerts
+  const { data: alertsData } = useQuery({
+    queryKey: ['alerts'],
+    queryFn: async () => {
+      const res = await fetch('/api/alerts');
+      return res.json();
+    },
+    enabled: !!currentUser,
+  });
+
+  // Check offline status
+  useState(() => {
+    setIsOffline(!navigator.onLine);
+    const handler = () => setIsOffline(!navigator.onLine);
+    window.addEventListener('online', handler);
+    window.addEventListener('offline', handler);
+    return () => { window.removeEventListener('online', handler); window.removeEventListener('offline', handler); };
   });
 
   // Fetch stats
@@ -295,11 +319,14 @@ function SadekhApp() {
 
             {/* Auth */}
             {currentUser ? (
-              <Button variant="outline" size="sm" onClick={() => setCurrentUser(null)} className="gap-1.5 text-xs">
+              <Button variant="outline" size="sm" onClick={async () => {
+                try { await fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'logout' }) }); } catch {}
+                setCurrentUser(null);
+              }} className="gap-1.5 text-xs">
                 <div className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold">
-                  {currentUser.name?.[0] || 'U'}
+                  {currentUser.profile?.fullName?.[0] || currentUser.name?.[0] || 'U'}
                 </div>
-                <span className="hidden sm:inline max-w-[80px] truncate">{currentUser.name}</span>
+                <span className="hidden sm:inline max-w-[80px] truncate">{currentUser.profile?.fullName || currentUser.name}</span>
                 <LogOut className="w-3 h-3" />
               </Button>
             ) : (
@@ -934,8 +961,17 @@ function SadekhApp() {
               ))}
             </ScrollArea>
             <div className="p-4 border-t border-border flex gap-2">
-              <Input placeholder={t('messages.placeholder', lang)} className="flex-1" />
-              <Button size="icon"><Send className="w-4 h-4" /></Button>
+              <Input placeholder={t('messages.placeholder', lang)} className="flex-1" value={msgText} onChange={(e) => setMsgText(e.target.value)} onKeyDown={async (e) => {
+                if (e.key === 'Enter' && msgText.trim()) {
+                  setSendingMsg(true);
+                  try {
+                    await fetch('/api/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: msgText, receiverId: messages?.[0]?.receiverId || messages?.[0]?.senderId }) });
+                    setMsgText('');
+                  } catch {}
+                  setSendingMsg(false);
+                }
+              }} />
+              <Button size="icon" disabled={sendingMsg || !msgText.trim()}><Send className="w-4 h-4" /></Button>
             </div>
           </Card>
         </div>
@@ -1608,16 +1644,42 @@ function SadekhApp() {
           className="fixed top-20 right-4 z-50 w-80 bg-card border border-border rounded-xl shadow-2xl p-4"
         >
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold flex items-center gap-2"><Bell className="w-4 h-4" /> {lang === 'fr' ? 'Alertes' : 'Alart'}</h3>
+            <h3 className="font-semibold flex items-center gap-2"><Bell className="w-4 h-4" /> {lang === 'fr' ? 'Alertes immobilier' : 'Alart immobiliér'}</h3>
             <button onClick={() => setShowAlertPanel(false)}><X className="w-4 h-4" /></button>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {currentUser ? (
-              <div className="text-sm text-muted-foreground p-3 bg-muted rounded-lg">
-                <p className="font-medium text-foreground mb-1">Nouveau bien correspondant !</p>
-                <p>Villa 4 chambres à Mermoz — 80M FCFA</p>
-                <p className="text-xs mt-1">Il y a 2h</p>
-              </div>
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  <Select value={newAlert.type} onValueChange={(v) => setNewAlert({ ...newAlert, type: v })}>
+                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous types</SelectItem>
+                      <SelectItem value="maison">Maisons</SelectItem>
+                      <SelectItem value="appartement">Apparts</SelectItem>
+                      <SelectItem value="terrain">Terrains</SelectItem>
+                      <SelectItem value="plan">Plans</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={newAlert.region} onValueChange={(v) => setNewAlert({ ...newAlert, region: v })}>
+                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {REGIONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Input type="number" placeholder="Budget max (FCFA)" className="h-8 text-xs" value={newAlert.maxPrice} onChange={(e) => setNewAlert({ ...newAlert, maxPrice: e.target.value })} />
+                <Button size="sm" className="w-full h-8 text-xs" disabled={alertCreating} onClick={async () => {
+                  setAlertCreating(true);
+                  try {
+                    await fetch('/api/alerts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create', ...newAlert }) });
+                  } catch {}
+                  setAlertCreating(false);
+                }}>
+                  <Bell className="w-3 h-3 mr-1" /> {lang === 'fr' ? 'Créer l\'alerte' : 'Sos alart bi'}
+                </Button>
+                <div className="text-xs text-muted-foreground">{lang === 'fr' ? 'Vous recevrez une notification pour chaque nouveau bien correspondant à vos critères.' : 'Dangay jott ndax sax biir bu nocci seen kaalaan.'}</div>
+              </>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-4">
                 {lang === 'fr' ? 'Connectez-vous pour créer des alertes' : 'Seet ngir sos alart'}
@@ -1625,6 +1687,14 @@ function SadekhApp() {
             )}
           </div>
         </motion.div>
+      )}
+
+      {/* Offline indicator */}
+      {isOffline && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-amber-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg flex items-center gap-2">
+          <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+          Mode hors ligne
+        </div>
       )}
 
       {/* Compare banner */}

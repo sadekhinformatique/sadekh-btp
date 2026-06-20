@@ -1,53 +1,79 @@
-import { db } from '@/lib/db';
+import { pool, rowsToCamelCase, toCamelCase } from '@/lib/supabase-server';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId') || 'demo-buyer';
+    const userId = searchParams.get('userId');
 
-    const user = await db.user.findFirst({ where: { email: 'acheteur@sadekh.sn' } });
-    const actualUserId = user?.id || userId;
+    // Find buyer profile
+    let profileId = userId;
+    if (!userId) {
+      const buyer = await pool.query(`SELECT id FROM profiles WHERE email = 'acheteur@sadekh.sn'`);
+      profileId = buyer.rows[0]?.id;
+    }
 
-    const favorites = await db.favorite.findMany({
-      where: { userId: actualUserId },
-      include: {
-        property: {
-          include: { user: { include: { profile: true } } },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    if (!profileId) {
+      return NextResponse.json([]);
+    }
 
-    return NextResponse.json(
-      favorites.map((f) => ({
-        ...f,
-        property: { ...f.property, images: JSON.parse(f.property.images || '[]') },
-      }))
+    const result = await pool.query(
+      `SELECT f.*, json_build_object(
+        'id', p.id, 'userId', p.user_id, 'type', p.type, 'title', p.title, 'description', p.description,
+        'price', p.price, 'priceNegotiable', p.price_negotiable, 'surfaceM2', p.surface_m2, 'rooms', p.rooms,
+        'region', p.region, 'city', p.city, 'quartier', p.quartier, 'lat', p.lat, 'lng', p.lng,
+        'images', p.images, 'titleFoncier', p.title_foncier, 'status', p.status, 'isPremium', p.is_premium,
+        'viewsCount', p.views_count, 'planPdfUrl', p.plan_pdf_url, 'planPrice', p.plan_price, 'planDownloads', p.plan_downloads,
+        'createdAt', p.created_at, 'updatedAt', p.updated_at,
+        'user', json_build_object('id', pr.id, 'name', pr.email, 'email', pr.email, 'profile', json_build_object(
+          'fullName', pr.full_name, 'phone', pr.phone, 'whatsapp', pr.whatsapp, 'agencyName', pr.agency_name, 'verified', pr.verified, 'avatar', pr.avatar
+        ))
+       ) as property
+       FROM favorites f
+       JOIN properties p ON f.property_id = p.id
+       LEFT JOIN profiles pr ON p.user_id = pr.id
+       WHERE f.user_id = $1
+       ORDER BY f.created_at DESC`,
+      [profileId]
     );
+
+    return NextResponse.json(result.rows.map((row: any) => toCamelCase(row)));
   } catch (error) {
+    console.error('Favorites GET error:', error);
     return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const { propertyId } = await request.json();
-    const user = await db.user.findFirst({ where: { email: 'acheteur@sadekh.sn' } });
-    if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    const { propertyId, userId } = await request.json();
 
-    const existing = await db.favorite.findFirst({
-      where: { userId: user.id, propertyId },
-    });
+    // Find user profile
+    let profileId = userId;
+    if (!profileId) {
+      const buyer = await pool.query(`SELECT id FROM profiles WHERE email = 'acheteur@sadekh.sn'`);
+      profileId = buyer.rows[0]?.id;
+    }
+    if (!profileId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
-    if (existing) {
-      await db.favorite.delete({ where: { id: existing.id } });
+    // Check existing
+    const existing = await pool.query(
+      `SELECT id FROM favorites WHERE user_id = $1 AND property_id = $2`,
+      [profileId, propertyId]
+    );
+
+    if (existing.rows[0]) {
+      await pool.query(`DELETE FROM favorites WHERE id = $1`, [existing.rows[0].id]);
       return NextResponse.json({ favorited: false });
     } else {
-      await db.favorite.create({ data: { userId: user.id, propertyId } });
+      await pool.query(
+        `INSERT INTO favorites (user_id, property_id) VALUES ($1, $2)`,
+        [profileId, propertyId]
+      );
       return NextResponse.json({ favorited: true }, { status: 201 });
     }
   } catch (error) {
+    console.error('Favorites POST error:', error);
     return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
 }
