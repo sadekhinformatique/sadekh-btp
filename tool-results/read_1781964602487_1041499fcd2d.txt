@@ -1,0 +1,1776 @@
+     1→'use client';
+     2→
+     3→import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
+     4→import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
+     5→import { motion, AnimatePresence } from 'framer-motion';
+     6→import { t, formatPrice, type Lang } from '@/lib/i18n';
+     7→import dynamic from 'next/dynamic';
+     8→
+     9→// Lazy-loaded heavy components
+    10→const MapView = dynamic(() => import("@/components/sadekh/MapView"), { ssr: false, loading: () => <div className="h-[500px] bg-muted animate-pulse rounded-xl flex items-center justify-center text-muted-foreground">Chargement de la carte...</div> });
+    11→import PaymentModal from '@/components/sadekh/PaymentModal';
+    12→import AuthModal from '@/components/sadekh/AuthModal';
+    13→const GpsPicker = dynamic(() => import('@/components/sadekh/GpsPicker'), { ssr: false, loading: () => <div className="h-[350px] bg-muted animate-pulse rounded-xl flex items-center justify-center text-muted-foreground">Chargement de la carte...</div> });
+    14→
+    15→const queryClient = new QueryClient({
+    16→  defaultOptions: { queries: { staleTime: 30000, retry: 1 } },
+    17→});
+    18→
+    19→// UI Components
+    20→import { Button } from '@/components/ui/button';
+    21→import { Card, CardContent } from '@/components/ui/card';
+    22→import { Input } from '@/components/ui/input';
+    23→import { Badge } from '@/components/ui/badge';
+    24→import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+    25→import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+    26→import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+    27→import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+    28→import { Textarea } from '@/components/ui/textarea';
+    29→import { Label } from '@/components/ui/label';
+    30→import { Checkbox } from '@/components/ui/checkbox';
+    31→import { Separator } from '@/components/ui/separator';
+    32→import { Skeleton } from '@/components/ui/skeleton';
+    33→import { ScrollArea } from '@/components/ui/scroll-area';
+    34→import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+    35→import {
+    36→  Search, Home, Building2, MapPin, FileText, Heart, MessageCircle, Send,
+    37→  Plus, Menu, X, ChevronDown, Star, Eye, Phone, Globe, Shield,
+    38→  BarChart3, Users, TrendingUp, MapPinned, MessageSquare, Bot,
+    39→  ArrowUpDown, Filter, Grid3X3, List, ChevronLeft, ChevronRight,
+    40→  Check, Crown, AlertTriangle, Download, Share2, Flag, Gavel,
+    41→  Zap, Building, HandCoins, Bell, Settings, LogOut, LogIn, Image as ImageIcon,
+    42→  Droplets, Ruler, DoorOpen, MapPinIcon, ChevronUp, Sparkles,
+    43→  MapIcon, LayoutGrid, CreditCard
+    44→} from 'lucide-react';
+    45→
+    46→/* ─── TYPES ─── */
+    47→interface Property {
+    48→  id: string;
+    49→  userId: string;
+    50→  type: string;
+    51→  title: string;
+    52→  description: string;
+    53→  price: number;
+    54→  priceNegotiable: boolean;
+    55→  surfaceM2: number | null;
+    56→  rooms: number | null;
+    57→  region: string;
+    58→  city: string;
+    59→  quartier: string;
+    60→  lat: number | null;
+    61→  lng: number | null;
+    62→  images: string[];
+    63→  titleFoncier: boolean;
+    64→  status: string;
+    65→  isPremium: boolean;
+    66→  viewsCount: number;
+    67→  user: {
+    68→    id: string;
+    69→    name: string;
+    70→    email: string;
+    71→    profile: {
+    72→      fullName: string | null;
+    73→      phone: string | null;
+    74→      whatsapp: string | null;
+    75→      agencyName: string | null;
+    76→      verified: boolean;
+    77→    } | null;
+    78→  };
+    79→}
+    80→
+    81→interface FavItem {
+    82→  id: string;
+    83→  userId: string;
+    84→  propertyId: string;
+    85→  property: Property;
+    86→}
+    87→
+    88→interface Message {
+    89→  id: string;
+    90→  senderId: string;
+    91→  receiverId: string;
+    92→  propertyId: string | null;
+    93→  content: string;
+    94→  readAt: string | null;
+    95→  createdAt: string;
+    96→  sender: { id: string; name: string; profile: { fullName: string | null; avatar: string | null } | null };
+    97→  receiver: { id: string; name: string; profile: { fullName: string | null; avatar: string | null } | null };
+    98→}
+    99→
+   100→type View = 'home' | 'listing' | 'favorites' | 'messages' | 'publish' | 'dashboard' | 'admin' | 'compare' | 'plans' | 'map';
+   101→type PropertyType = 'all' | 'maison' | 'appartement' | 'terrain' | 'plan';
+   102→type ListingView = 'grid' | 'map';
+   103→
+   104→const REGIONS = ['Dakar', 'Thiès', 'Saint-Louis', 'Ziguinchor', 'Kaolack', 'Rufisque', 'Louga', 'Diourbel', 'Tambacounda', 'Kolda', 'Sédhiou', 'Kédougou'];
+   105→
+   106→const TYPE_ICONS: Record<string, React.ReactNode> = {
+   107→  maison: <Home className="w-5 h-5" />,
+   108→  appartement: <Building2 className="w-5 h-5" />,
+   109→  terrain: <MapPin className="w-5 h-5" />,
+   110→  plan: <FileText className="w-5 h-5" />,
+   111→};
+   112→
+   113→const TYPE_COLORS: Record<string, string> = {
+   114→  maison: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+   115→  appartement: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+   116→  terrain: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+   117→  plan: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+   118→};
+   119→
+   120→/* ─── MAIN APP ─── */
+   121→function SadekhApp() {
+   122→  const [lang, setLang] = useState<Lang>('fr');
+   123→  const [view, setView] = useState<View>('home');
+   124→  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+   125→  const [showDetail, setShowDetail] = useState(false);
+   126→  const [mobileMenu, setMobileMenu] = useState(false);
+   127→  const [searchQuery, setSearchQuery] = useState('');
+   128→  const [filters, setFilters] = useState<{
+   129→    type: PropertyType;
+   130→    region: string;
+   131→    maxPrice: string;
+   132→    minSurface: string;
+   133→    rooms: string;
+   134→    sort: string;
+   135→  }>({
+   136→    type: 'all',
+   137→    region: 'all',
+   138→    maxPrice: '',
+   139→    minSurface: '',
+   140→    rooms: '',
+   141→    sort: 'recent',
+   142→  });
+   143→  const [page, setPage] = useState(1);
+   144→  const [compareIds, setCompareIds] = useState<string[]>([]);
+   145→  const [showChatbot, setShowChatbot] = useState(false);
+   146→  const [chatMessages, setChatMessages] = useState<Array<{ role: string; content: string }>>([
+   147→    { role: 'assistant', content: 'Bienvenue sur SADEKH BTP ! 👋\nJe suis votre assistant immobilier. Posez-moi vos questions sur :\n• Les prix au Sénégal\n• Les quartiers et régions\n• Le paiement Wave / Orange Money\n• Les documents (titre foncier)\n• La publication d\'une annonce\n• Les plans architecturaux' },
+   148→  ]);
+   149→  const [chatLoading, setChatLoading] = useState(false);
+   150→  const [publishStep, setPublishStep] = useState(1);
+   151→  const [publishForm, setPublishForm] = useState({ type: 'maison', title: '', description: '', price: '', surfaceM2: '', rooms: '', region: 'Dakar', city: '', quartier: '', lat: '', lng: '', titleFoncier: false, priceNegotiable: false });
+   152→  const [publishing, setPublishing] = useState(false);
+   153→  const [publishSuccess, setPublishSuccess] = useState(false);
+   154→  const [listingView, setListingView] = useState<ListingView>('grid');
+   155→  const [showAuth, setShowAuth] = useState(false);
+   156→  const [currentUser, setCurrentUser] = useState<any>(null);
+   157→  const [paymentProperty, setPaymentProperty] = useState<Property | null>(null);
+   158→  const [paymentType, setPaymentType] = useState<'boost' | 'plan' | 'premium'>('boost');
+   159→  const [showAlertPanel, setShowAlertPanel] = useState(false);
+   160→  const [newAlert, setNewAlert] = useState({ type: 'all', region: 'Dakar', maxPrice: '' });
+   161→  const [alertCreating, setAlertCreating] = useState(false);
+   162→  const [msgText, setMsgText] = useState('');
+   163→  const [sendingMsg, setSendingMsg] = useState(false);
+   164→  const [isOffline, setIsOffline] = useState(false);
+   165→
+   166→  // Fetch properties
+   167→  const { data: propertiesData, isLoading: loadingProperties } = useQuery({
+   168→    queryKey: ['properties', filters, page, searchQuery],
+   169→    queryFn: async () => {
+   170→      const params = new URLSearchParams();
+   171→      if (filters.type !== 'all') params.set('type', filters.type);
+   172→      if (filters.region !== 'all') params.set('region', filters.region);
+   173→      if (filters.maxPrice) params.set('maxPrice', filters.maxPrice);
+   174→      if (filters.minSurface) params.set('minSurface', filters.minSurface);
+   175→      if (filters.rooms) params.set('rooms', filters.rooms);
+   176→      if (filters.sort) params.set('sort', filters.sort);
+   177→      if (searchQuery) params.set('search', searchQuery);
+   178→      params.set('page', String(page));
+   179→      params.set('limit', '12');
+   180→      const res = await fetch(`/api/properties?${params}`);
+   181→      return res.json();
+   182→    },
+   183→  });
+   184→
+   185→  // Fetch favorites
+   186→  const { data: favorites, refetch: refetchFav } = useQuery({
+   187→    queryKey: ['favorites'],
+   188→    queryFn: async () => {
+   189→      const res = await fetch('/api/favorites');
+   190→      return res.json() as Promise<FavItem[]>;
+   191→    },
+   192→  });
+   193→
+   194→  // Fetch messages
+   195→  const { data: messages } = useQuery({
+   196→    queryKey: ['messages'],
+   197→    queryFn: async () => {
+   198→      const res = await fetch('/api/messages');
+   199→      return res.json() as Promise<Message[]>;
+   200→    },
+   201→  });
+   202→
+   203→  // Fetch alerts
+   204→  const { data: alertsData } = useQuery({
+   205→    queryKey: ['alerts'],
+   206→    queryFn: async () => {
+   207→      const res = await fetch('/api/alerts');
+   208→      return res.json();
+   209→    },
+   210→    enabled: !!currentUser,
+   211→  });
+   212→
+   213→  // Fetch payments
+   214→  const { data: paymentsData } = useQuery({
+   215→    queryKey: ['payments'],
+   216→    queryFn: async () => {
+   217→      const res = await fetch('/api/payments');
+   218→      return res.json();
+   219→    },
+   220→  });
+   221→
+   222→  const paymentsList: any[] = paymentsData || [];
+   223→
+   224→  // Check offline status
+   225→  useEffect(() => {
+   226→    setIsOffline(!navigator.onLine);
+   227→    const handler = () => setIsOffline(!navigator.onLine);
+   228→    window.addEventListener('online', handler);
+   229→    window.addEventListener('offline', handler);
+   230→    return () => { window.removeEventListener('online', handler); window.removeEventListener('offline', handler); };
+   231→  }, []);
+   232→
+   233→  // Fetch stats
+   234→  const { data: stats } = useQuery({
+   235→    queryKey: ['stats'],
+   236→    queryFn: async () => {
+   237→      const res = await fetch('/api/stats');
+   238→      return res.json();
+   239→    },
+   240→  });
+   241→
+   242→  const properties: Property[] = propertiesData?.properties || [];
+   243→  const pagination = propertiesData?.pagination || { page: 1, pages: 1, total: 0 };
+   244→  const favoriteIds = useMemo(
+   245→    () => new Set((favorites || []).map((f: FavItem) => f.propertyId)),
+   246→    [favorites]
+   247→  );
+   248→  const unreadCount = (messages || []).filter((m: Message) => !m.readAt && m.receiverId !== 'demo-buyer').length;
+   249→
+   250→  const toggleFavorite = async (propertyId: string) => {
+   251→    await fetch('/api/favorites', {
+   252→      method: 'POST',
+   253→      headers: { 'Content-Type': 'application/json' },
+   254→      body: JSON.stringify({ propertyId }),
+   255→    });
+   256→    refetchFav();
+   257→  };
+   258→
+   259→  const openProperty = (p: Property) => {
+   260→    setSelectedProperty(p);
+   261→    setShowDetail(true);
+   262→    setView('listing');
+   263→  };
+   264→
+   265→  const handleSearch = (q: string) => {
+   266→    setSearchQuery(q);
+   267→    setPage(1);
+   268→    if (view === 'home') setView('listing');
+   269→  };
+   270→
+   271→  const updateFilter = (key: string, value: string) => {
+   272→    setFilters((prev) => ({ ...prev, [key]: value }));
+   273→    setPage(1);
+   274→  };
+   275→
+   276→  const toggleCompare = (id: string) => {
+   277→    setCompareIds((prev) =>
+   278→      prev.includes(id) ? prev.filter((x) => x !== id) : prev.length < 3 ? [...prev, id] : prev
+   279→    );
+   280→  };
+   281→
+   282→  /* ─── HEADER ─── */
+   283→  const renderHeader = () => (
+   284→    <header className="sticky top-0 z-50 bg-white/95 dark:bg-gray-950/95 backdrop-blur-sm border-b border-border">
+   285→      <div className="senegal-stripe" />
+   286→      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+   287→        <div className="flex items-center justify-between h-16">
+   288→          {/* Logo */}
+   289→          <button onClick={() => { setView('home'); setPage(1); setSearchQuery(''); setFilters({ type: 'all', region: 'all', maxPrice: '', minSurface: '', rooms: '', sort: 'recent' }); }} className="flex items-center gap-2 shrink-0">
+   290→            <img src="/logo-sadekh.png" alt="SADEKH BTP" className="h-9 w-9 rounded-full object-cover" />
+   291→            <span className="font-bold text-lg tracking-tight text-primary hidden sm:block">SADEKH <span className="text-amber-600">BTP</span></span>
+   292→          </button>
+   293→
+   294→          {/* Desktop Nav */}
+   295→          <nav className="hidden md:flex items-center gap-1">
+   296→            {[
+   297→              { id: 'home' as View, label: 'nav.home', icon: <Home className="w-4 h-4" /> },
+   298→              { id: 'listing' as View, label: 'nav.properties', icon: <Building2 className="w-4 h-4" /> },
+   299→              { id: 'map' as View, label: 'Vue carte', icon: <MapIcon className="w-4 h-4" /> },
+   300→              { id: 'plans' as View, label: 'nav.plans', icon: <FileText className="w-4 h-4" /> },
+   301→              { id: 'favorites' as View, label: 'nav.favorites', icon: <Heart className="w-4 h-4" /> },
+   302→              { id: 'messages' as View, label: 'nav.messages', icon: <MessageCircle className="w-4 h-4" /> },
+   303→              { id: 'dashboard' as View, label: 'nav.dashboard', icon: <BarChart3 className="w-4 h-4" /> },
+   304→              { id: 'admin' as View, label: 'nav.admin', icon: <Shield className="w-4 h-4" /> },
+   305→            ].map((item) => (
+   306→              <Button
+   307→                key={item.id}
+   308→                variant={view === item.id ? 'default' : 'ghost'}
+   309→                size="sm"
+   310→                onClick={() => { setView(item.id); if (item.id === 'plans') { updateFilter('type', 'plan'); setView('listing'); } if (item.id === 'listing') { updateFilter('type', 'all'); } if (item.id === 'map') { updateFilter('type', 'all'); } }}
+   311→                className="gap-1.5 text-sm"
+   312→              >
+   313→                {item.icon}
+   314→                {t(item.label, lang)}
+   315→              </Button>
+   316→            ))}
+   317→          </nav>
+   318→
+   319→          {/* Actions */}
+   320→          <div className="flex items-center gap-2">
+   321→            {/* Alerts */}
+   322→            <TooltipProvider>
+   323→              <Tooltip>
+   324→                <TooltipTrigger asChild>
+   325→                  <Button variant="ghost" size="icon" className="relative" onClick={() => setShowAlertPanel(!showAlertPanel)}>
+   326→                    <Bell className="w-4 h-4" />
+   327→                  </Button>
+   328→                </TooltipTrigger>
+   329→                <TooltipContent>{lang === 'fr' ? 'Alertes' : 'Alart'}</TooltipContent>
+   330→              </Tooltip>
+   331→            </TooltipProvider>
+   332→
+   333→            {/* Auth */}
+   334→            {currentUser ? (
+   335→              <Button variant="outline" size="sm" onClick={async () => {
+   336→                try { await fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'logout' }) }); } catch {}
+   337→                setCurrentUser(null);
+   338→              }} className="gap-1.5 text-xs">
+   339→                <div className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold">
+   340→                  {currentUser.profile?.fullName?.[0] || currentUser.name?.[0] || 'U'}
+   341→                </div>
+   342→                <span className="hidden sm:inline max-w-[80px] truncate">{currentUser.profile?.fullName || currentUser.name}</span>
+   343→                <LogOut className="w-3 h-3" />
+   344→              </Button>
+   345→            ) : (
+   346→              <Button variant="outline" size="sm" onClick={() => setShowAuth(true)} className="gap-1.5">
+   347→                <LogIn className="w-4 h-4" />
+   348→                <span className="hidden sm:inline">{t('nav.login', lang)}</span>
+   349→              </Button>
+   350→            )}
+   351→            <TooltipProvider>
+   352→              <Tooltip>
+   353→                <TooltipTrigger asChild>
+   354→                  <Button
+   355→                    variant="outline"
+   356→                    size="sm"
+   357→                    onClick={() => setLang(lang === 'fr' ? 'wo' : 'fr')}
+   358→                    className="gap-1 text-xs font-bold"
+   359→                  >
+   360→                    <Globe className="w-3.5 h-3.5" />
+   361→                    {lang === 'fr' ? 'Wolof' : 'FR'}
+   362→                  </Button>
+   363→                </TooltipTrigger>
+   364→                <TooltipContent>{lang === 'fr' ? 'Wax ci Wolof' : 'Switch to French'}</TooltipContent>
+   365→              </Tooltip>
+   366→            </TooltipProvider>
+   367→
+   368→            <Button size="sm" onClick={() => setView('publish')} className="gap-1.5 bg-primary hover:bg-primary/90">
+   369→              <Plus className="w-4 h-4" />
+   370→              <span className="hidden sm:inline">{t('nav.publish', lang)}</span>
+   371→            </Button>
+   372→
+   373→            {/* Mobile menu */}
+   374→            <Sheet open={mobileMenu} onOpenChange={setMobileMenu}>
+   375→              <SheetTrigger asChild>
+   376→                <Button variant="ghost" size="icon" className="md:hidden">
+   377→                  <Menu className="w-5 h-5" />
+   378→                </Button>
+   379→              </SheetTrigger>
+   380→              <SheetContent side="right" className="w-72">
+   381→                <SheetHeader>
+   382→                  <SheetTitle className="flex items-center gap-2">
+   383→                    <img src="/logo-sadekh.png" alt="SADEKH BTP" className="h-8 w-8 rounded-full" />
+   384→                    SADEKH BTP
+   385→                  </SheetTitle>
+   386→                </SheetHeader>
+   387→                <nav className="flex flex-col gap-1 mt-6">
+   388→                  {[
+   389→                    { id: 'home' as View, label: 'nav.home', icon: <Home className="w-5 h-5" /> },
+   390→                    { id: 'listing' as View, label: 'nav.properties', icon: <Building2 className="w-5 h-5" /> },
+   391→                    { id: 'plans' as View, label: 'nav.plans', icon: <FileText className="w-5 h-5" /> },
+   392→                    { id: 'favorites' as View, label: 'nav.favorites', icon: <Heart className="w-5 h-5" /> },
+   393→                    { id: 'messages' as View, label: 'nav.messages', icon: <MessageCircle className="w-5 h-5" /> },
+   394→                    { id: 'publish' as View, label: 'nav.publish', icon: <Plus className="w-5 h-5" /> },
+   395→                    { id: 'dashboard' as View, label: 'nav.dashboard', icon: <BarChart3 className="w-5 h-5" /> },
+   396→                    { id: 'admin' as View, label: 'nav.admin', icon: <Shield className="w-5 h-5" /> },
+   397→                  ].map((item) => (
+   398→                    <Button
+   399→                      key={item.id}
+   400→                      variant={view === item.id ? 'secondary' : 'ghost'}
+   401→                      className="justify-start gap-3 h-12 text-base"
+   402→                      onClick={() => { setView(item.id); if (item.id === 'plans') { updateFilter('type', 'plan'); setView('listing'); } setMobileMenu(false); }}
+   403→                    >
+   404→                      {item.icon}
+   405→                      {t(item.label, lang)}
+   406→                    </Button>
+   407→                  ))}
+   408→                </nav>
+   409→              </SheetContent>
+   410→            </Sheet>
+   411→          </div>
+   412→        </div>
+   413→      </div>
+   414→    </header>
+   415→  );
+   416→
+   417→  /* ─── HERO ─── */
+   418→  const renderHero = () => (
+   419→    <section className="hero-gradient text-white relative overflow-hidden">
+   420→      <div className="absolute inset-0 opacity-10">
+   421→        <div className="absolute top-10 left-10 w-72 h-72 bg-amber-300 rounded-full blur-3xl" />
+   422→        <div className="absolute bottom-10 right-10 w-96 h-96 bg-green-300 rounded-full blur-3xl" />
+   423→      </div>
+   424→      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 md:py-24 relative z-10">
+   425→        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+   426→          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-4 max-w-4xl">
+   427→            {t('hero.title', lang)}
+   428→          </h1>
+   429→          <p className="text-lg sm:text-xl text-green-100 mb-8 max-w-2xl">
+   430→            {t('hero.subtitle', lang)}
+   431→          </p>
+   432→        </motion.div>
+   433→
+   434→        {/* Search bar */}
+   435→        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="max-w-2xl">
+   436→          <div className="flex bg-white rounded-xl shadow-xl overflow-hidden">
+   437→            <div className="flex-1 relative">
+   438→              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+   439→              <input
+   440→                type="text"
+   441→                placeholder={t('hero.search.placeholder', lang)}
+   442→                value={searchQuery}
+   443→                onChange={(e) => handleSearch(e.target.value)}
+   444→                onKeyDown={(e) => e.key === 'Enter' && handleSearch(searchQuery)}
+   445→                className="w-full h-14 pl-12 pr-4 text-gray-900 text-base outline-none"
+   446→              />
+   447→            </div>
+   448→            <Button
+   449→              onClick={() => handleSearch(searchQuery)}
+   450→              className="h-14 px-6 bg-primary hover:bg-primary/90 text-white rounded-none text-base font-semibold"
+   451→            >
+   452→              <Search className="w-5 h-5 mr-2" />
+   453→              {t('hero.search.btn', lang)}
+   454→            </Button>
+   455→          </div>
+   456→        </motion.div>
+   457→
+   458→        {/* Quick type filters */}
+   459→        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="flex flex-wrap gap-3 mt-8">
+   460→          {(['all', 'maison', 'appartement', 'terrain', 'plan'] as PropertyType[]).map((type) => (
+   461→            <button
+   462→              key={type}
+   463→              onClick={() => { updateFilter('type', type); setView('listing'); }}
+   464→              className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
+   465→                filters.type === type
+   466→                  ? 'bg-white text-primary shadow-md'
+   467→                  : 'bg-white/15 text-white hover:bg-white/25 backdrop-blur-sm'
+   468→              }`}
+   469→            >
+   470→              {TYPE_ICONS[type] || <Grid3X3 className="w-4 h-4" />}
+   471→              {t(`filter.${type}`, lang)}
+   472→            </button>
+   473→          ))}
+   474→        </motion.div>
+   475→
+   476→        {/* Stats */}
+   477→        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="flex flex-wrap gap-8 mt-12">
+   478→          {[
+   479→            { value: stats?.totalProperties || 16, label: t('hero.stats.properties', lang) },
+   480→            { value: stats?.totalUsers || 6, label: t('hero.stats.agents', lang) },
+   481→            { value: REGIONS.length, label: t('hero.stats.regions', lang) },
+   482→          ].map((stat) => (
+   483→            <div key={stat.label}>
+   484→              <div className="text-3xl font-bold">{stat.value}</div>
+   485→              <div className="text-green-200 text-sm">{stat.label}</div>
+   486→            </div>
+   487→          ))}
+   488→        </motion.div>
+   489→      </div>
+   490→    </section>
+   491→  );
+   492→
+   493→  /* ─── PROPERTY CARD ─── */
+   494→  const renderPropertyCard = (p: Property) => (
+   495→    <motion.div
+   496→      key={p.id}
+   497→      initial={{ opacity: 0, y: 20 }}
+   498→      animate={{ opacity: 1, y: 0 }}
+   499→      transition={{ duration: 0.3 }}
+   500→      layout
+   501→    >
+   502→      <Card className="property-card overflow-hidden border border-border h-full flex flex-col group cursor-pointer" onClick={() => openProperty(p)}>
+   503→        {/* Image */}
+   504→        <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+   505→          <img
+   506→            src={p.images[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&h=400&fit=crop'}
+   507→            alt={p.title}
+   508→            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+   509→            loading="lazy"
+   510→          />
+   511→          {/* Badges */}
+   512→          <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+   513→            <Badge className={TYPE_COLORS[p.type] || ''}>{t(`filter.${p.type}`, lang)}</Badge>
+   514→            {p.isPremium && (
+   515→              <Badge className="bg-amber-500 text-white border-0">
+   516→                <Crown className="w-3 h-3 mr-1" />
+   517→                <span className="premium-badge font-bold">Premium</span>
+   518→              </Badge>
+   519→            )}
+   520→          </div>
+   521→          {/* Actions */}
+   522→          <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+   523→            <button
+   524→              onClick={(e) => { e.stopPropagation(); toggleFavorite(p.id); }}
+   525→              className="w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md hover:bg-white transition-colors"
+   526→            >
+   527→              <Heart className={`w-4 h-4 ${favoriteIds.has(p.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
+   528→            </button>
+   529→            <button
+   530→              onClick={(e) => { e.stopPropagation(); toggleCompare(p.id); }}
+   531→              className={`w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md hover:bg-white transition-colors ${compareIds.includes(p.id) ? 'ring-2 ring-primary' : ''}`}
+   532→            >
+   533→              <ArrowUpDown className={`w-4 h-4 ${compareIds.includes(p.id) ? 'text-primary' : 'text-gray-600'}`} />
+   534→            </button>
+   535→          </div>
+   536→          {/* Price */}
+   537→          <div className="absolute bottom-3 left-3">
+   538→            <div className="bg-black/70 backdrop-blur-sm text-white px-3 py-1.5 rounded-lg">
+   539→              <div className="font-bold text-lg">{formatPrice(p.price, lang)}</div>
+   540→              {p.priceNegotiable && <div className="text-xs text-green-300">{t('property.negotiable', lang)}</div>}
+   541→            </div>
+   542→          </div>
+   543→        </div>
+   544→
+   545→        {/* Content */}
+   546→        <CardContent className="p-4 flex-1 flex flex-col gap-2">
+   547→          <h3 className="font-semibold text-base leading-snug line-clamp-2 group-hover:text-primary transition-colors">{p.title}</h3>
+   548→          <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
+   549→            <MapPinIcon className="w-3.5 h-3.5 shrink-0" />
+   550→            <span className="truncate">{p.quartier}, {p.city || p.region}</span>
+   551→          </div>
+   552→          {/* Tags */}
+   553→          <div className="flex flex-wrap gap-2 mt-auto pt-2">
+   554→            {p.surfaceM2 && (
+   555→              <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded-md">
+   556→                <Ruler className="w-3 h-3" /> {p.surfaceM2} m²
+   557→              </span>
+   558→            )}
+   559→            {p.rooms && p.rooms > 0 && (
+   560→              <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded-md">
+   561→                <DoorOpen className="w-3 h-3" /> {p.rooms} {t('property.rooms', lang)}
+   562→              </span>
+   563→            )}
+   564→            <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded-md">
+   565→              <Eye className="w-3 h-3" /> {p.viewsCount}
+   566→            </span>
+   567→            {p.titleFoncier && (
+   568→              <span className="flex items-center gap-1 text-xs text-green-700 bg-green-50 dark:text-green-400 dark:bg-green-900/30 px-2 py-1 rounded-md">
+   569→                <Gavel className="w-3 h-3" /> {t('property.titleFoncier', lang)}
+   570→              </span>
+   571→            )}
+   572→          </div>
+   573→          {/* Seller */}
+   574→          <div className="flex items-center gap-2 pt-2 border-t border-border">
+   575→            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+   576→              {(p.user?.profile?.fullName || p.user?.name || '?')[0]}
+   577→            </div>
+   578→            <div className="flex-1 min-w-0">
+   579→              <div className="text-sm font-medium truncate">{p.user?.profile?.fullName || p.user?.name}</div>
+   580→              {p.user?.profile?.agencyName && <div className="text-xs text-muted-foreground truncate">{p.user.profile.agencyName}</div>}
+   581→            </div>
+   582→            {p.user?.profile?.verified && <Shield className="w-4 h-4 text-primary shrink-0" />}
+   583→          </div>
+   584→        </CardContent>
+   585→      </Card>
+   586→    </motion.div>
+   587→  );
+   588→
+   589→  /* ─── FILTERS BAR ─── */
+   590→  const renderFilters = () => (
+   591→    <div className="bg-card border-b border-border sticky top-[68px] z-40">
+   592→      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
+   593→        <div className="flex flex-wrap items-center gap-3">
+   594→          {/* Map / Grid toggle */}
+   595→          <div className="flex bg-muted rounded-lg p-0.5 mr-2">
+   596→            <button
+   597→              onClick={() => setListingView('grid')}
+   598→              className={`p-1.5 rounded-md transition-all ${listingView === 'grid' ? 'bg-white shadow-sm' : ''}`}
+   599→            >
+   600→              <LayoutGrid className="w-4 h-4" />
+   601→            </button>
+   602→            <button
+   603→              onClick={() => { setListingView('map'); if (view !== 'listing' && view !== 'map') setView('listing'); }}
+   604→              className={`p-1.5 rounded-md transition-all ${listingView === 'map' ? 'bg-white shadow-sm' : ''}`}
+   605→            >
+   606→              <MapIcon className="w-4 h-4" />
+   607→            </button>
+   608→          </div>
+   609→
+   610→          {/* Type tabs */}
+   611→          <div className="flex bg-muted rounded-lg p-0.5">
+   612→            {(['all', 'maison', 'appartement', 'terrain', 'plan'] as PropertyType[]).map((type) => (
+   613→              <button
+   614→                key={type}
+   615→                onClick={() => updateFilter('type', type)}
+   616→                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+   617→                  filters.type === type
+   618→                    ? 'bg-white text-foreground shadow-sm'
+   619→                    : 'text-muted-foreground hover:text-foreground'
+   620→                }`}
+   621→              >
+   622→                {t(`filter.${type}`, lang)}
+   623→              </button>
+   624→            ))}
+   625→          </div>
+   626→
+   627→          <Separator orientation="vertical" className="h-6 hidden sm:block" />
+   628→
+   629→          {/* Region */}
+   630→          <Select value={filters.region} onValueChange={(v) => updateFilter('region', v)}>
+   631→            <SelectTrigger className="w-[140px] h-9 text-sm">
+   632→              <MapPinned className="w-3.5 h-3.5 mr-1.5" />
+   633→              <SelectValue placeholder={t('filter.region', lang)} />
+   634→            </SelectTrigger>
+   635→            <SelectContent>
+   636→              <SelectItem value="all">{t('filter.all', lang)}</SelectItem>
+   637→              {REGIONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+   638→            </SelectContent>
+   639→          </Select>
+   640→
+   641→          {/* Max Price */}
+   642→          <Select value={filters.maxPrice} onValueChange={(v) => updateFilter('maxPrice', v)}>
+   643→            <SelectTrigger className="w-[150px] h-9 text-sm">
+   644→              <HandCoins className="w-3.5 h-3.5 mr-1.5" />
+   645→              <SelectValue placeholder={t('filter.price', lang)} />
+   646→            </SelectTrigger>
+   647→            <SelectContent>
+   648→              <SelectItem value="all">{t('filter.all', lang)}</SelectItem>
+   649→              <SelectItem value="20000000">20M FCFA</SelectItem>
+   650→              <SelectItem value="50000000">50M FCFA</SelectItem>
+   651→              <SelectItem value="75000000">75M FCFA</SelectItem>
+   652→              <SelectItem value="100000000">100M FCFA</SelectItem>
+   653→              <SelectItem value="150000000">150M FCFA</SelectItem>
+   654→              <SelectItem value="200000000">200M FCFA</SelectItem>
+   655→            </SelectContent>
+   656→          </Select>
+   657→
+   658→          {/* Sort */}
+   659→          <Select value={filters.sort} onValueChange={(v) => updateFilter('sort', v)}>
+   660→            <SelectTrigger className="w-[160px] h-9 text-sm">
+   661→              <ArrowUpDown className="w-3.5 h-3.5 mr-1.5" />
+   662→              <SelectValue placeholder={t('filter.sort', lang)} />
+   663→            </SelectTrigger>
+   664→            <SelectContent>
+   665→              <SelectItem value="recent">{t('filter.sort.recent', lang)}</SelectItem>
+   666→              <SelectItem value="priceAsc">{t('filter.sort.priceAsc', lang)}</SelectItem>
+   667→              <SelectItem value="priceDesc">{t('filter.sort.priceDesc', lang)}</SelectItem>
+   668→              <SelectItem value="views">{t('filter.sort.views', lang)}</SelectItem>
+   669→            </SelectContent>
+   670→          </Select>
+   671→
+   672→          <div className="ml-auto text-sm text-muted-foreground">
+   673→            {pagination.total} {t('filter.results', lang)}
+   674→          </div>
+   675→        </div>
+   676→      </div>
+   677→    </div>
+   678→  );
+   679→
+   680→  /* ─── LISTING VIEW ─── */
+   681→  const renderListing = () => (
+   682→    <div className="min-h-screen">
+   683→      {renderFilters()}
+   684→      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+   685→        {listingView === 'map' ? (
+   686→          <div className="rounded-xl overflow-hidden border border-border shadow-lg" style={{ height: 'calc(100vh - 200px)' }}>
+   687→            <MapView properties={properties} lang={lang} onPropertyClick={openProperty} />
+   688→          </div>
+   689→        ) : loadingProperties ? (
+   690→          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+   691→            {Array.from({ length: 6 }).map((_, i) => (
+   692→              <Card key={i} className="overflow-hidden">
+   693→                <Skeleton className="aspect-[4/3]" />
+   694→                <CardContent className="p-4 space-y-3">
+   695→                  <Skeleton className="h-5 w-3/4" />
+   696→                  <Skeleton className="h-4 w-1/2" />
+   697→                  <div className="flex gap-2">
+   698→                    <Skeleton className="h-6 w-16 rounded-md" />
+   699→                    <Skeleton className="h-6 w-16 rounded-md" />
+   700→                  </div>
+   701→                </CardContent>
+   702→              </Card>
+   703→            ))}
+   704→          </div>
+   705→        ) : properties.length === 0 ? (
+   706→          <div className="text-center py-20">
+   707→            <Search className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
+   708→            <h3 className="text-xl font-semibold mb-2">{t('common.noResults', lang)}</h3>
+   709→            <Button variant="outline" onClick={() => { setFilters({ type: 'all', region: 'all', maxPrice: '', minSurface: '', rooms: '', sort: 'recent' }); setSearchQuery(''); }}>
+   710→              {t('common.retry', lang)}
+   711→            </Button>
+   712→          </div>
+   713→        ) : (
+   714→          <>
+   715→            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+   716→              {properties.map(renderPropertyCard)}
+   717→            </div>
+   718→            {/* Pagination */}
+   719→            {pagination.pages > 1 && (
+   720→              <div className="flex items-center justify-center gap-2 mt-8">
+   721→                <Button variant="outline" size="icon" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+   722→                  <ChevronLeft className="w-4 h-4" />
+   723→                </Button>
+   724→                {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((p) => (
+   725→                  <Button key={p} variant={p === page ? 'default' : 'outline'} size="sm" onClick={() => setPage(p)} className="w-9">
+   726→                    {p}
+   727→                  </Button>
+   728→                ))}
+   729→                <Button variant="outline" size="icon" disabled={page >= pagination.pages} onClick={() => setPage(page + 1)}>
+   730→                  <ChevronRight className="w-4 h-4" />
+   731→                </Button>
+   732→              </div>
+   733→            )}
+   734→          </>
+   735→        )}
+   736→      </div>
+   737→    </div>
+   738→  );
+   739→
+   740→  /* ─── PROPERTY DETAIL MODAL ─── */
+   741→  const renderPropertyDetail = () => {
+   742→    if (!selectedProperty) return null;
+   743→    const p = selectedProperty;
+   744→    return (
+   745→      <Dialog open={showDetail} onOpenChange={setShowDetail}>
+   746→        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+   747→          {/* Image gallery */}
+   748→          <div className="relative">
+   749→            <div className="aspect-[16/9] sm:aspect-[2/1] w-full overflow-hidden rounded-t-lg">
+   750→              <img
+   751→                src={p.images[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=500&fit=crop'}
+   752→                alt={p.title}
+   753→                className="w-full h-full object-cover"
+   754→              />
+   755→            </div>
+   756→            <div className="absolute top-4 left-4 flex gap-2">
+   757→              <Badge className={TYPE_COLORS[p.type] || ''}>{t(`filter.${p.type}`, lang)}</Badge>
+   758→              {p.isPremium && <Badge className="bg-amber-500 text-white"><Crown className="w-3 h-3 mr-1" />Premium</Badge>}
+   759→            </div>
+   760→            <div className="absolute top-4 right-4">
+   761→              <button onClick={() => toggleFavorite(p.id)} className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md hover:bg-white">
+   762→                <Heart className={`w-5 h-5 ${favoriteIds.has(p.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
+   763→              </button>
+   764→            </div>
+   765→            {p.images.length > 1 && (
+   766→              <div className="absolute bottom-4 left-4 flex gap-2 overflow-x-auto max-w-[80%]">
+   767→                {p.images.map((img, i) => (
+   768→                  <img key={i} src={img} alt="" className="w-16 h-12 rounded-md object-cover border-2 border-white/50 cursor-pointer hover:border-white transition-colors" />
+   769→                ))}
+   770→              </div>
+   771→            )}
+   772→          </div>
+   773→
+   774→          <div className="p-6">
+   775→            {/* Title + Price */}
+   776→            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+   777→              <div>
+   778→                <h2 className="text-2xl font-bold mb-1">{p.title}</h2>
+   779→                <div className="flex items-center gap-2 text-muted-foreground">
+   780→                  <MapPinIcon className="w-4 h-4" />
+   781→                  <span>{p.quartier}, {p.city || p.region}, Sénégal</span>
+   782→                </div>
+   783→              </div>
+   784→              <div className="text-right shrink-0">
+   785→                <div className="text-2xl font-bold text-primary">{formatPrice(p.price, lang)}</div>
+   786→                {p.priceNegotiable && <Badge variant="secondary" className="mt-1">{t('property.negotiable', lang)}</Badge>}
+   787→              </div>
+   788→            </div>
+   789→
+   790→            {/* Characteristics */}
+   791→            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+   792→              {p.surfaceM2 && (
+   793→                <div className="bg-muted rounded-lg p-3 text-center">
+   794→                  <Ruler className="w-5 h-5 mx-auto mb-1 text-primary" />
+   795→                  <div className="font-bold text-lg">{p.surfaceM2} m²</div>
+   796→                  <div className="text-xs text-muted-foreground">Surface</div>
+   797→                </div>
+   798→              )}
+   799→              {p.rooms && p.rooms > 0 && (
+   800→                <div className="bg-muted rounded-lg p-3 text-center">
+   801→                  <DoorOpen className="w-5 h-5 mx-auto mb-1 text-primary" />
+   802→                  <div className="font-bold text-lg">{p.rooms}</div>
+   803→                  <div className="text-xs text-muted-foreground">{t('property.rooms', lang)}</div>
+   804→                </div>
+   805→              )}
+   806→              <div className="bg-muted rounded-lg p-3 text-center">
+   807→                <Eye className="w-5 h-5 mx-auto mb-1 text-primary" />
+   808→                <div className="font-bold text-lg">{p.viewsCount}</div>
+   809→                <div className="text-xs text-muted-foreground">{t('property.views', lang)}</div>
+   810→              </div>
+   811→              <div className="bg-muted rounded-lg p-3 text-center">
+   812→                <MapPinIcon className="w-5 h-5 mx-auto mb-1 text-primary" />
+   813→                <div className="font-bold text-lg">{p.region}</div>
+   814→                <div className="text-xs text-muted-foreground">{t('detail.location', lang)}</div>
+   815→              </div>
+   816→            </div>
+   817→
+   818→            {/* Tags */}
+   819→            <div className="flex flex-wrap gap-2 mb-6">
+   820→              {p.titleFoncier && (
+   821→                <Badge variant="outline" className="border-green-500 text-green-700 dark:text-green-400 gap-1 py-1">
+   822→                  <Check className="w-3 h-3" /> {t('property.titleFoncier', lang)}
+   823→                </Badge>
+   824→              )}
+   825→              <Badge variant="outline" className="gap-1 py-1">
+   826→                <Building className="w-3 h-3" /> {t(`filter.${p.type}`, lang)}
+   827→              </Badge>
+   828→            </div>
+   829→
+   830→            {/* Description */}
+   831→            <div className="mb-6">
+   832→              <h3 className="font-semibold text-lg mb-3">{t('detail.description', lang)}</h3>
+   833→              <p className="text-muted-foreground leading-relaxed whitespace-pre-line">{p.description}</p>
+   834→            </div>
+   835→
+   836→            {/* Seller */}
+   837→            <div className="bg-muted rounded-xl p-4 mb-6">
+   838→              <div className="flex items-center gap-4">
+   839→                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xl font-bold">
+   840→                  {(p.user?.profile?.fullName || p.user?.name || '?')[0]}
+   841→                </div>
+   842→                <div className="flex-1">
+   843→                  <div className="font-semibold flex items-center gap-2">
+   844→                    {p.user?.profile?.fullName || p.user?.name}
+   845→                    {p.user?.profile?.verified && (
+   846→                      <Badge className="bg-primary text-primary-foreground text-xs gap-1">
+   847→                        <Shield className="w-3 h-3" /> {t('detail.verified', lang)}
+   848→                      </Badge>
+   849→                    )}
+   850→                  </div>
+   851→                  {p.user?.profile?.agencyName && <div className="text-sm text-muted-foreground">{p.user.profile.agencyName}</div>}
+   852→                </div>
+   853→              </div>
+   854→            </div>
+   855→
+   856→            {/* Action buttons */}
+   857→            <div className="flex flex-col sm:flex-row gap-3">
+   858→              {p.user?.profile?.whatsapp && (
+   859→                <Button
+   860→                  className="flex-1 bg-green-600 hover:bg-green-700 text-white gap-2 h-12 text-base"
+   861→                  onClick={() => window.open(`https://wa.me/${p.user.profile.whatsapp.replace('+', '')}?text=Bonjour, je suis intéressé par: ${encodeURIComponent(p.title)}`, '_blank')}
+   862→                >
+   863→                  <MessageCircle className="w-5 h-5" /> WhatsApp
+   864→                </Button>
+   865→              )}
+   866→              <Button variant="outline" className="flex-1 gap-2 h-12" onClick={() => setView('messages')}>
+   867→                <Send className="w-5 h-5" /> {t('property.contact', lang)}
+   868→              </Button>
+   869→              {p.type === 'plan' && (
+   870→                <Button variant="outline" className="flex-1 gap-2 h-12 border-amber-500 text-amber-700" onClick={() => { setPaymentProperty(p); setPaymentType('plan'); }}>
+   871→                  <CreditCard className="w-5 h-5" /> {t('detail.downloadPlan', lang)} — {formatPrice(p.price, lang)}
+   872→                </Button>
+   873→              )}
+   874→              {p.type !== 'plan' && (
+   875→                <Button variant="outline" size="icon" className="h-12 w-12 text-amber-600 border-amber-300 hover:bg-amber-50" onClick={() => { setPaymentProperty(p); setPaymentType('boost'); }} title="Booster cette annonce">
+   876→                  <Zap className="w-5 h-5" />
+   877→                </Button>
+   878→              )}
+   879→              <Button variant="outline" size="icon" className="h-12 w-12" onClick={() => { toggleCompare(p.id); }}>
+   880→                <ArrowUpDown className="w-5 h-5" />
+   881→              </Button>
+   882→              <Button variant="outline" size="icon" className="h-12 w-12">
+   883→                <Share2 className="w-5 h-5" />
+   884→              </Button>
+   885→              <Button variant="outline" size="icon" className="h-12 w-12 text-destructive hover:text-destructive">
+   886→                <Flag className="w-5 h-5" />
+   887→              </Button>
+   888→            </div>
+   889→          </div>
+   890→        </DialogContent>
+   891→      </Dialog>
+   892→    );
+   893→  };
+   894→
+   895→  /* ─── FAVORITES VIEW ─── */
+   896→  const renderFavorites = () => (
+   897→    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+   898→      <div className="flex items-center gap-3 mb-6">
+   899→        <Heart className="w-7 h-7 text-red-500" />
+   900→        <h1 className="text-2xl font-bold">{t('favorites.title', lang)}</h1>
+   901→        <Badge variant="secondary">{(favorites || []).length}</Badge>
+   902→      </div>
+   903→      {!favorites || favorites.length === 0 ? (
+   904→        <div className="text-center py-20">
+   905→          <Heart className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
+   906→          <h3 className="text-xl font-semibold mb-2">{t('favorites.empty', lang)}</h3>
+   907→          <p className="text-muted-foreground mb-6">{t('favorites.empty.desc', lang)}</p>
+   908→          <Button onClick={() => setView('listing')}>{t('nav.properties', lang)}</Button>
+   909→        </div>
+   910→      ) : (
+   911→        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+   912→          {favorites.map((f: FavItem) => renderPropertyCard(f.property))}
+   913→        </div>
+   914→      )}
+   915→    </div>
+   916→  );
+   917→
+   918→  /* ─── MESSAGES VIEW ─── */
+   919→  const renderMessages = () => {
+   920→    const conversations = (messages || []).reduce((acc: any, m: Message) => {
+   921→      const key = [m.senderId, m.receiverId].sort().join('-');
+   922→      if (!acc[key]) acc[key] = { partner: m.senderId === 'demo-buyer' ? m.receiver : m.sender, messages: [] };
+   923→      acc[key].messages.push(m);
+   924→      return acc;
+   925→    }, {});
+   926→
+   927→    return (
+   928→      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+   929→        <div className="flex items-center gap-3 mb-6">
+   930→          <MessageSquare className="w-7 h-7 text-primary" />
+   931→          <h1 className="text-2xl font-bold">{t('messages.title', lang)}</h1>
+   932→          {unreadCount > 0 && <Badge className="bg-red-500 text-white">{unreadCount}</Badge>}
+   933→        </div>
+   934→        <div className="grid md:grid-cols-3 gap-4 h-[500px]">
+   935→          {/* Conversation list */}
+   936→          <Card className="overflow-hidden">
+   937→            <ScrollArea className="h-full">
+   938→              {Object.values(conversations).map((conv: any, i: number) => (
+   939→                <button
+   940→                  key={i}
+   941→                  className="w-full p-4 flex items-center gap-3 hover:bg-muted/50 transition-colors border-b border-border text-left"
+   942→                >
+   943→                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shrink-0">
+   944→                    {(conv.partner?.profile?.fullName || conv.partner?.name || '?')[0]}
+   945→                  </div>
+   946→                  <div className="flex-1 min-w-0">
+   947→                    <div className="font-medium text-sm truncate">{conv.partner?.profile?.fullName || conv.partner?.name}</div>
+   948→                    <div className="text-xs text-muted-foreground truncate">{conv.messages[conv.messages.length - 1]?.content}</div>
+   949→                  </div>
+   950→                </button>
+   951→              ))}
+   952→              {Object.keys(conversations).length === 0 && (
+   953→                <div className="p-6 text-center text-muted-foreground text-sm">{t('messages.empty', lang)}</div>
+   954→              )}
+   955→            </ScrollArea>
+   956→          </Card>
+   957→
+   958→          {/* Chat area */}
+   959→          <Card className="md:col-span-2 flex flex-col">
+   960→            <div className="p-4 border-b border-border">
+   961→              <div className="font-semibold">Conversation</div>
+   962→            </div>
+   963→            <ScrollArea className="flex-1 p-4">
+   964→              {(messages || []).map((m: Message) => (
+   965→                <div key={m.id} className={`flex mb-4 ${m.senderId === 'demo-buyer' ? 'justify-end' : 'justify-start'}`}>
+   966→                  <div className={`max-w-[70%] px-4 py-2.5 rounded-2xl text-sm ${
+   967→                    m.senderId === 'demo-buyer'
+   968→                      ? 'bg-primary text-primary-foreground rounded-br-md'
+   969→                      : 'bg-muted rounded-bl-md'
+   970→                  }`}>
+   971→                    {m.content}
+   972→                  </div>
+   973→                </div>
+   974→              ))}
+   975→            </ScrollArea>
+   976→            <div className="p-4 border-t border-border flex gap-2">
+   977→              <Input placeholder={t('messages.placeholder', lang)} className="flex-1" value={msgText} onChange={(e) => setMsgText(e.target.value)} onKeyDown={async (e) => {
+   978→                if (e.key === 'Enter' && msgText.trim()) {
+   979→                  setSendingMsg(true);
+   980→                  try {
+   981→                    await fetch('/api/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: msgText, receiverId: messages?.[0]?.receiverId || messages?.[0]?.senderId }) });
+   982→                    setMsgText('');
+   983→                  } catch {}
+   984→                  setSendingMsg(false);
+   985→                }
+   986→              }} />
+   987→              <Button size="icon" disabled={sendingMsg || !msgText.trim()}><Send className="w-4 h-4" /></Button>
+   988→            </div>
+   989→          </Card>
+   990→        </div>
+   991→      </div>
+   992→    );
+   993→  };
+   994→
+   995→  /* ─── PUBLISH FORM ─── */
+   996→  const renderPublish = () => {
+   997→    const step = publishStep;
+   998→    const form = publishForm;
+   999→
+  1000→    const handleSubmit = async () => {
+  1001→      setPublishing(true);
+  1002→      await fetch('/api/properties', {
+  1003→        method: 'POST',
+  1004→        headers: { 'Content-Type': 'application/json' },
+  1005→        body: JSON.stringify(form),
+  1006→      });
+  1007→      setPublishing(false);
+  1008→      setPublishSuccess(true);
+  1009→      setTimeout(() => { setPublishSuccess(false); setView('listing'); }, 2000);
+  1010→    };
+  1011→
+  1012→    if (publishSuccess) {
+  1013→      return (
+  1014→        <div className="max-w-2xl mx-auto px-4 py-20 text-center">
+  1015→          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring' }}>
+  1016→            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+  1017→              <Check className="w-10 h-10 text-green-600" />
+  1018→            </div>
+  1019→            <h2 className="text-2xl font-bold mb-2">{t('publish.success', lang)}</h2>
+  1020→          </motion.div>
+  1021→        </div>
+  1022→      );
+  1023→    }
+  1024→
+  1025→    return (
+  1026→      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+  1027→        <div className="flex items-center gap-3 mb-8">
+  1028→          <Plus className="w-7 h-7 text-primary" />
+  1029→          <h1 className="text-2xl font-bold">{t('publish.title', lang)}</h1>
+  1030→        </div>
+  1031→
+  1032→        {/* Progress */}
+  1033→        <div className="flex items-center gap-2 mb-8">
+  1034→          {[1, 2, 3, 4].map((s) => (
+  1035→            <React.Fragment key={s}>
+  1036→              <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-colors ${
+  1037→                step >= s ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+  1038→              }`}>{s}</div>
+  1039→              {s < 4 && <div className={`flex-1 h-0.5 ${step > s ? 'bg-primary' : 'bg-muted'}`} />}
+  1040→            </React.Fragment>
+  1041→          ))}
+  1042→        </div>
+  1043→
+  1044→        <Card className="p-6">
+  1045→          {step === 1 && (
+  1046→            <div className="space-y-6">
+  1047→              <h3 className="text-lg font-semibold">{t('publish.step1', lang)}</h3>
+  1048→              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+  1049→                {['maison', 'appartement', 'terrain', 'plan'].map((type) => (
+  1050→                  <button
+  1051→                    key={type}
+  1052→                    onClick={() => setPublishForm({ ...form, type })}
+  1053→                    className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${
+  1054→                      form.type === type ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+  1055→                    }`}
+  1056→                  >
+  1057→                    {TYPE_ICONS[type]}
+  1058→                    <span className="text-sm font-medium">{t(`filter.${type}`, lang)}</span>
+  1059→                  </button>
+  1060→                ))}
+  1061→              </div>
+  1062→            </div>
+  1063→          )}
+  1064→
+  1065→          {step === 2 && (
+  1066→            <div className="space-y-4">
+  1067→              <h3 className="text-lg font-semibold">{t('publish.step2', lang)}</h3>
+  1068→              <div>
+  1069→                <Label>{t('publish.title.label', lang)}</Label>
+  1070→                <Input className="mt-1" value={form.title} onChange={(e) => setPublishForm({ ...form, title: e.target.value })} placeholder="Villa 4 chambres — Almadies" />
+  1071→              </div>
+  1072→              <div>
+  1073→                <Label>{t('publish.description.label', lang)}</Label>
+  1074→                <Textarea className="mt-1" rows={4} value={form.description} onChange={(e) => setPublishForm({ ...form, description: e.target.value })} placeholder="Décrivez votre bien..." />
+  1075→                <Button variant="ghost" size="sm" className="mt-1 gap-1 text-primary">
+  1076→                  <Sparkles className="w-3.5 h-3.5" /> {t('publish.ai.desc', lang)}
+  1077→                </Button>
+  1078→              </div>
+  1079→              <div className="grid grid-cols-2 gap-4">
+  1080→                <div>
+  1081→                  <Label>{t('publish.price.label', lang)}</Label>
+  1082→                  <Input type="number" className="mt-1" value={form.price} onChange={(e) => setPublishForm({ ...form, price: e.target.value })} placeholder="75000000" />
+  1083→                </div>
+  1084→                <div>
+  1085→                  <Label>{t('publish.surface.label', lang)}</Label>
+  1086→                  <Input type="number" className="mt-1" value={form.surfaceM2} onChange={(e) => setPublishForm({ ...form, surfaceM2: e.target.value })} placeholder="200" />
+  1087→                </div>
+  1088→              </div>
+  1089→              <div>
+  1090→                <Label>{t('publish.rooms.label', lang)}</Label>
+  1091→                <Input type="number" className="mt-1" value={form.rooms} onChange={(e) => setPublishForm({ ...form, rooms: e.target.value })} placeholder="4" />
+  1092→              </div>
+  1093→              <div className="flex gap-4">
+  1094→                <label className="flex items-center gap-2 cursor-pointer">
+  1095→                  <Checkbox checked={form.priceNegotiable} onCheckedChange={(v) => setPublishForm({ ...form, priceNegotiable: !!v })} />
+  1096→                  <span className="text-sm">{t('publish.negotiable', lang)}</span>
+  1097→                </label>
+  1098→                <label className="flex items-center gap-2 cursor-pointer">
+  1099→                  <Checkbox checked={form.titleFoncier} onCheckedChange={(v) => setPublishForm({ ...form, titleFoncier: !!v })} />
+  1100→                  <span className="text-sm">{t('publish.foncier', lang)}</span>
+  1101→                </label>
+  1102→              </div>
+  1103→            </div>
+  1104→          )}
+  1105→
+  1106→          {step === 3 && (
+  1107→            <div className="space-y-4">
+  1108→              <h3 className="text-lg font-semibold">{t('publish.step3', lang)}</h3>
+  1109→              <div className="border-2 border-dashed border-border rounded-xl p-12 text-center">
+  1110→                <ImageIcon className="w-12 h-12 mx-auto text-muted-foreground/40 mb-3" />
+  1111→                <p className="text-muted-foreground mb-2">{t('publish.photos', lang)}</p>
+  1112→                <Button variant="outline" size="sm">Choisir des fichiers</Button>
+  1113→                <p className="text-xs text-muted-foreground mt-2">JPG, PNG, WebP. Max 5MB par photo.</p>
+  1114→              </div>
+  1115→            </div>
+  1116→          )}
+  1117→
+  1118→          {step === 4 && (
+  1119→            <div className="space-y-4">
+  1120→              <h3 className="text-lg font-semibold">{t('publish.step4', lang)}</h3>
+  1121→              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+  1122→                <div>
+  1123→                  <Label>{t('publish.region.label', lang)}</Label>
+  1124→                  <Select value={form.region} onValueChange={(v) => setPublishForm({ ...form, region: v })}>
+  1125→                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+  1126→                    <SelectContent>{REGIONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+  1127→                  </Select>
+  1128→                </div>
+  1129→                <div>
+  1130→                  <Label>{t('publish.city.label', lang)}</Label>
+  1131→                  <Input className="mt-1" value={form.city} onChange={(e) => setPublishForm({ ...form, city: e.target.value })} placeholder="Dakar" />
+  1132→                </div>
+  1133→                <div>
+  1134→                  <Label>{t('publish.quartier.label', lang)}</Label>
+  1135→                  <Input className="mt-1" value={form.quartier} onChange={(e) => setPublishForm({ ...form, quartier: e.target.value })} placeholder="Almadies" />
+  1136→                </div>
+  1137→              </div>
+  1138→              <div className="mt-4">
+  1139→                <Label className="flex items-center gap-2 mb-2"><MapPin className="w-4 h-4 text-primary" /> {lang === 'fr' ? 'Localisation GPS' : 'GPS Bee'}</Label>
+  1140→                <GpsPicker
+  1141→                  lat={form.lat ? parseFloat(form.lat) : null}
+  1142→                  lng={form.lng ? parseFloat(form.lng) : null}
+  1143→                  onSelect={(lat, lng) => setPublishForm({ ...form, lat: String(lat), lng: String(lng) })}
+  1144→                  lang={lang}
+  1145→                />
+  1146→              </div>
+  1147→            </div>
+  1148→          )}
+  1149→
+  1150→          {/* Navigation */}
+  1151→          <div className="flex justify-between mt-8">
+  1152→            <Button variant="outline" onClick={() => step > 1 ? setPublishStep(step - 1) : setView('home')}>
+  1153→              {step > 1 ? <ChevronLeft className="w-4 h-4 mr-1" /> : null}
+  1154→              {step > 1 ? '' : t('common.cancel', lang)}
+  1155→            </Button>
+  1156→            {step < 4 ? (
+  1157→              <Button onClick={() => setPublishStep(step + 1)}>
+  1158→                {t('common.save', lang)} <ChevronRight className="w-4 h-4 ml-1" />
+  1159→              </Button>
+  1160→            ) : (
+  1161→              <Button onClick={handleSubmit} disabled={publishing} className="gap-2">
+  1162→                <Zap className="w-4 h-4" />
+  1163→                {t('publish.submit', lang)}
+  1164→              </Button>
+  1165→            )}
+  1166→          </div>
+  1167→        </Card>
+  1168→      </div>
+  1169→    );
+  1170→  };
+  1171→
+  1172→  /* ─── DASHBOARD VIEW ─── */
+  1173→  const renderDashboard = () => (
+  1174→    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+  1175→      <div className="flex items-center gap-3 mb-6">
+  1176→        <BarChart3 className="w-7 h-7 text-primary" />
+  1177→        <h1 className="text-2xl font-bold">{t('dashboard.title', lang)}</h1>
+  1178→      </div>
+  1179→
+  1180→      {/* Stats cards */}
+  1181→      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+  1182→        {[
+  1183→          { label: t('dashboard.activeProperties', lang), value: stats?.activeProperties || 16, icon: <Building className="w-5 h-5" />, color: 'text-green-600 bg-green-100 dark:bg-green-900/30' },
+  1184→          { label: t('dashboard.totalViews', lang), value: stats?.totalViews || 0, icon: <Eye className="w-5 h-5" />, color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30' },
+  1185→          { label: t('dashboard.totalContacts', lang), value: stats?.totalMessages || 4, icon: <MessageCircle className="w-5 h-5" />, color: 'text-purple-600 bg-purple-100 dark:bg-purple-900/30' },
+  1186→          { label: t('dashboard.payments', lang), value: stats?.premiumProperties || 0, icon: <HandCoins className="w-5 h-5" />, color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30' },
+  1187→        ].map((stat) => (
+  1188→          <Card key={stat.label} className="p-4">
+  1189→            <div className="flex items-center justify-between mb-3">
+  1190→              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${stat.color}`}>{stat.icon}</div>
+  1191→            </div>
+  1192→            <div className="text-2xl font-bold">{stat.value}</div>
+  1193→            <div className="text-sm text-muted-foreground">{stat.label}</div>
+  1194→          </Card>
+  1195→        ))}
+  1196→      </div>
+  1197→
+  1198→      {/* Payment history */}
+  1199→      {paymentsList.length > 0 && (
+  1200→        <Card className="p-4 mb-8">
+  1201→          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2"><CreditCard className="w-5 h-5 text-amber-600" /> {lang === 'fr' ? 'Historique des paiements' : 'Historiq pajamaan'}</h2>
+  1202→          <div className="space-y-3">
+  1203→            {paymentsList.slice(0, 5).map((pay: any) => (
+  1204→              <div key={pay.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+  1205→                <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold ${pay.type === 'boost' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : pay.type === 'premium' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}`}>
+  1206→                  {pay.type === 'boost' ? <Zap className="w-4 h-4" /> : pay.type === 'premium' ? <Crown className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+  1207→                </div>
+  1208→                <div className="flex-1 min-w-0">
+  1209→                  <div className="text-sm font-medium">{pay.type === 'boost' ? 'Boost' : pay.type === 'premium' ? 'Premium' : 'Plan'} · <span className={`font-mono text-xs ${pay.status === 'completed' ? 'text-green-600' : 'text-amber-600'}`}>{pay.status}</span></div>
+  1210→                  <div className="text-xs text-muted-foreground">{pay.method === 'wave' ? 'Wave' : 'Orange Money'} · {pay.refWave || pay.id?.slice(0, 12)}</div>
+  1211→                </div>
+  1212→                <div className="text-sm font-bold text-primary shrink-0">{formatPrice(pay.amount, lang)}</div>
+  1213→              </div>
+  1214→            ))}
+  1215→          </div>
+  1216→        </Card>
+  1217→      )}
+  1218→
+  1219→      {/* My properties */}
+  1220→      <div className="mb-8">
+  1221→        <div className="flex items-center justify-between mb-4">
+  1222→          <h2 className="text-lg font-semibold">{t('dashboard.myProperties', lang)}</h2>
+  1223→          <Button size="sm" onClick={() => setView('publish')} className="gap-1"><Plus className="w-4 h-4" /> {t('nav.publish', lang)}</Button>
+  1224→        </div>
+  1225→        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  1226→          {properties.slice(0, 6).map(renderPropertyCard)}
+  1227→        </div>
+  1228→      </div>
+  1229→
+  1230→      {/* Recent messages */}
+  1231→      <Card className="p-4">
+  1232→        <h2 className="text-lg font-semibold mb-4">{t('dashboard.recentMessages', lang)}</h2>
+  1233→        <div className="space-y-3">
+  1234→          {(messages || []).slice(0, 5).map((m: Message) => (
+  1235→            <div key={m.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+  1236→              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+  1237→                {(m.sender?.profile?.fullName || m.sender?.name || '?')[0]}
+  1238→              </div>
+  1239→              <div className="flex-1 min-w-0">
+  1240→                <div className="text-sm font-medium">{m.sender?.profile?.fullName || m.sender?.name}</div>
+  1241→                <div className="text-xs text-muted-foreground truncate">{m.content}</div>
+  1242→              </div>
+  1243→              <div className="text-xs text-muted-foreground shrink-0">{new Date(m.createdAt).toLocaleDateString('fr-FR')}</div>
+  1244→            </div>
+  1245→          ))}
+  1246→        </div>
+  1247→      </Card>
+  1248→    </div>
+  1249→  );
+  1250→
+  1251→  /* ─── ADMIN VIEW ─── */
+  1252→  const renderAdmin = () => (
+  1253→    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+  1254→      <div className="flex items-center gap-3 mb-6">
+  1255→        <Shield className="w-7 h-7 text-primary" />
+  1256→        <h1 className="text-2xl font-bold">{t('admin.title', lang)}</h1>
+  1257→      </div>
+  1258→
+  1259→      {/* Admin stats */}
+  1260→      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+  1261→        {[
+  1262→          { label: t('admin.users', lang), value: stats?.totalUsers || 6, icon: <Users className="w-5 h-5" /> },
+  1263→          { label: t('hero.stats.properties', lang), value: stats?.totalProperties || 16, icon: <Building className="w-5 h-5" /> },
+  1264→          { label: t('admin.reports', lang), value: 0, icon: <AlertTriangle className="w-5 h-5" /> },
+  1265→          { label: t('admin.revenue', lang), value: `${((stats?.premiumProperties || 0) * 5000).toLocaleString()} F`, icon: <TrendingUp className="w-5 h-5" /> },
+  1266→        ].map((stat) => (
+  1267→          <Card key={stat.label} className="p-4">
+  1268→            <div className="flex items-center gap-2 mb-2 text-muted-foreground">{stat.icon} {stat.label}</div>
+  1269→            <div className="text-2xl font-bold">{stat.value}</div>
+  1270→          </Card>
+  1271→        ))}
+  1272→      </div>
+  1273→
+  1274→      {/* Properties by type */}
+  1275→      {stats?.propertiesByType && (
+  1276→        <Card className="p-6 mb-8">
+  1277→          <h2 className="text-lg font-semibold mb-4">{t('dashboard.stats', lang)}</h2>
+  1278→          <div className="space-y-3">
+  1279→            {stats.propertiesByType.map((item: any) => (
+  1280→              <div key={item.type} className="flex items-center gap-4">
+  1281→                <div className="flex items-center gap-2 w-32">
+  1282→                  {TYPE_ICONS[item.type]}
+  1283→                  <span className="text-sm font-medium">{t(`filter.${item.type}`, lang)}</span>
+  1284→                </div>
+  1285→                <div className="flex-1 bg-muted rounded-full h-3 overflow-hidden">
+  1286→                  <motion.div
+  1287→                    initial={{ width: 0 }}
+  1288→                    animate={{ width: `${(item._count.id / (stats.totalProperties || 1)) * 100}%` }}
+  1289→                    transition={{ duration: 0.8, ease: 'easeOut' }}
+  1290→                    className="h-full bg-primary rounded-full"
+  1291→                  />
+  1292→                </div>
+  1293→                <span className="text-sm font-bold w-8 text-right">{item._count.id}</span>
+  1294→              </div>
+  1295→            ))}
+  1296→          </div>
+  1297→        </Card>
+  1298→      )}
+  1299→
+  1300→      {/* Top properties */}
+  1301→      <Card className="p-6">
+  1302→        <h2 className="text-lg font-semibold mb-4">Top annonces</h2>
+  1303→        <div className="space-y-3">
+  1304→          {(stats?.recentProperties || []).map((p: any, i: number) => (
+  1305→            <div key={p.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+  1306→              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">{i + 1}</div>
+  1307→              <div className="flex-1 min-w-0">
+  1308→                <div className="font-medium text-sm truncate">{p.title}</div>
+  1309→                <div className="text-xs text-muted-foreground">{t(`filter.${p.type}`, lang)} · {formatPrice(p.price, lang)}</div>
+  1310→              </div>
+  1311→              <div className="text-sm text-muted-foreground flex items-center gap-1">
+  1312→                <Eye className="w-3.5 h-3.5" /> {p.viewsCount}
+  1313→              </div>
+  1314→            </div>
+  1315→          ))}
+  1316→        </div>
+  1317→      </Card>
+  1318→    </div>
+  1319→  );
+  1320→
+  1321→  /* ─── COMPARE VIEW ─── */
+  1322→  const renderCompare = () => {
+  1323→    const compareProperties = properties.filter((p) => compareIds.includes(p.id));
+  1324→    if (compareIds.length < 2) {
+  1325→      return (
+  1326→        <div className="max-w-3xl mx-auto px-4 py-20 text-center">
+  1327→          <ArrowUpDown className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
+  1328→          <h2 className="text-2xl font-bold mb-2">{t('compare.title', lang)}</h2>
+  1329→          <p className="text-muted-foreground">{t('compare.empty', lang)}</p>
+  1330→        </div>
+  1331→      );
+  1332→    }
+  1333→    return (
+  1334→      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+  1335→        <h1 className="text-2xl font-bold mb-6">{t('compare.title', lang)}</h1>
+  1336→        <div className="overflow-x-auto">
+  1337→          <table className="w-full">
+  1338→            <thead>
+  1339→              <tr>
+  1340→                <th className="p-3 text-left w-40" />
+  1341→                {compareProperties.map((p) => (
+  1342→                  <th key={p.id} className="p-3 text-left min-w-[250px]">
+  1343→                    <img src={p.images[0]} alt="" className="w-full h-40 object-cover rounded-lg mb-2" />
+  1344→                    <div className="font-semibold">{p.title}</div>
+  1345→                  </th>
+  1346→                ))}
+  1347→              </tr>
+  1348→            </thead>
+  1349→            <tbody>
+  1350→              {[
+  1351→                { label: 'Prix', render: (p: Property) => formatPrice(p.price, lang) },
+  1352→                { label: 'Type', render: (p: Property) => t(`filter.${p.type}`, lang) },
+  1353→                { label: 'Surface', render: (p: Property) => p.surfaceM2 ? `${p.surfaceM2} m²` : '—' },
+  1354→                { label: 'Pièces', render: (p: Property) => p.rooms || '—' },
+  1355→                { label: 'Région', render: (p: Property) => p.region },
+  1356→                { label: 'Quartier', render: (p: Property) => p.quartier },
+  1357→                { label: 'Titre foncier', render: (p: Property) => p.titleFoncier ? <Check className="w-5 h-5 text-green-600" /> : <X className="w-5 h-5 text-red-400" /> },
+  1358→                { label: 'Négociable', render: (p: Property) => p.priceNegotiable ? <Check className="w-5 h-5 text-green-600" /> : <X className="w-5 h-5 text-red-400" /> },
+  1359→                { label: 'Vues', render: (p: Property) => p.viewsCount },
+  1360→                { label: 'Premium', render: (p: Property) => p.isPremium ? <Crown className="w-5 h-5 text-amber-500" /> : <X className="w-5 h-5 text-muted-foreground" /> },
+  1361→              ].map((row) => (
+  1362→                <tr key={row.label} className="border-t border-border">
+  1363→                  <td className="p-3 font-medium text-sm text-muted-foreground">{row.label}</td>
+  1364→                  {compareProperties.map((p) => (
+  1365→                    <td key={p.id} className="p-3 text-sm">{row.render(p)}</td>
+  1366→                  ))}
+  1367→                </tr>
+  1368→              ))}
+  1369→            </tbody>
+  1370→          </table>
+  1371→        </div>
+  1372→      </div>
+  1373→    );
+  1374→  };
+  1375→
+  1376→  /* ─── CHATBOT ─── */
+  1377→  const renderChatbot = () => (
+  1378→    <div className="fixed bottom-6 right-6 z-50">
+  1379→      <AnimatePresence>
+  1380→        {showChatbot && (
+  1381→          <motion.div
+  1382→            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+  1383→            animate={{ opacity: 1, y: 0, scale: 1 }}
+  1384→            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+  1385→            className="mb-3 w-[360px] max-h-[500px] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+  1386→          >
+  1387→            <div className="bg-primary text-primary-foreground p-4 flex items-center gap-3">
+  1388→              <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
+  1389→                <Bot className="w-5 h-5" />
+  1390→              </div>
+  1391→              <div>
+  1392→                <div className="font-semibold">{t('chatbot.title', lang)}</div>
+  1393→                <div className="text-xs text-primary-foreground/70">Assistant SADEKH</div>
+  1394→              </div>
+  1395→              <button onClick={() => setShowChatbot(false)} className="ml-auto w-8 h-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30">
+  1396→                <X className="w-4 h-4" />
+  1397→              </button>
+  1398→            </div>
+  1399→            <ScrollArea className="flex-1 p-4 max-h-[350px]">
+  1400→              {chatMessages.map((msg, i) => (
+  1401→                <div key={i} className={`flex mb-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+  1402→                  <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm whitespace-pre-line ${
+  1403→                    msg.role === 'user'
+  1404→                      ? 'bg-primary text-primary-foreground rounded-br-md'
+  1405→                      : 'bg-muted rounded-bl-md'
+  1406→                  }`}>
+  1407→                    {msg.content}
+  1408→                  </div>
+  1409→                </div>
+  1410→              ))}
+  1411→            </ScrollArea>
+  1412→            <div className="p-3 border-t border-border flex gap-2">
+  1413→              <Input
+  1414→                placeholder={t('chatbot.placeholder', lang)}
+  1415→                className="flex-1 h-9 text-sm"
+  1416→                disabled={chatLoading}
+  1417→                onKeyDown={async (e) => {
+  1418→                  if (e.key === 'Enter') {
+  1419→                    const val = (e.target as HTMLInputElement).value.trim();
+  1420→                    if (!val) return;
+  1421→                    const userMsg = { role: 'user' as const, content: val };
+  1422→                    setChatMessages((prev) => [...prev, userMsg]);
+  1423→                    (e.target as HTMLInputElement).value = '';
+  1424→                    setChatLoading(true);
+  1425→                    try {
+  1426→                      const res = await fetch('/api/chatbot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: val }) });
+  1427→                      const data = await res.json();
+  1428→                      setChatMessages((prev) => [...prev, { role: 'assistant', content: data.response || 'Désolé, une erreur est survenue.' }]);
+  1429→                    } catch {
+  1430→                      setChatMessages((prev) => [...prev, { role: 'assistant', content: 'Désolé, je suis temporairement indisponible. Réessayez dans un instant.' }]);
+  1431→                    }
+  1432→                    setChatLoading(false);
+  1433→                  }
+  1434→                }}
+  1435→              />
+  1436→              <Button size="icon" className="h-9 w-9" disabled={chatLoading}>{chatLoading ? <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" /> : <Send className="w-4 h-4" />}</Button>
+  1437→            </div>
+  1438→          </motion.div>
+  1439→        )}
+  1440→      </AnimatePresence>
+  1441→      <motion.button
+  1442→        whileHover={{ scale: 1.1 }}
+  1443→        whileTap={{ scale: 0.9 }}
+  1444→        onClick={() => setShowChatbot(!showChatbot)}
+  1445→        className="w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-xl flex items-center justify-center hover:bg-primary/90 transition-colors"
+  1446→      >
+  1447→        {showChatbot ? <X className="w-6 h-6" /> : <Bot className="w-6 h-6" />}
+  1448→      </motion.button>
+  1449→    </div>
+  1450→  );
+  1451→
+  1452→  /* ─── FOOTER ─── */
+  1453→  const renderFooter = () => (
+  1454→    <footer className="bg-card border-t border-border mt-auto">
+  1455→      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
+  1456→        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+  1457→          {/* About */}
+  1458→          <div className="md:col-span-2">
+  1459→            <div className="flex items-center gap-2 mb-4">
+  1460→              <img src="/logo-sadekh.png" alt="SADEKH BTP" className="h-8 w-8 rounded-full" />
+  1461→              <span className="font-bold text-lg">SADEKH <span className="text-amber-600">BTP</span></span>
+  1462→            </div>
+  1463→            <p className="text-muted-foreground text-sm leading-relaxed max-w-md">
+  1464→              {t('footer.about.desc', lang)}
+  1465→            </p>
+  1466→            <div className="flex gap-3 mt-4">
+  1467→              {['Wave', 'Orange Money'].map((m) => (
+  1468→                <Badge key={m} variant="outline" className="text-xs">{m}</Badge>
+  1469→              ))}
+  1470→            </div>
+  1471→          </div>
+  1472→
+  1473→          {/* Quick links */}
+  1474→          <div>
+  1475→            <h3 className="font-semibold mb-4">{t('footer.links', lang)}</h3>
+  1476→            <div className="space-y-2">
+  1477→              {['maison', 'appartement', 'terrain', 'plan'].map((type) => (
+  1478→                <button key={type} onClick={() => { updateFilter('type', type); setView('listing'); }} className="block text-sm text-muted-foreground hover:text-foreground transition-colors">
+  1479→                  {t(`filter.${type}`, lang)}
+  1480→                </button>
+  1481→              ))}
+  1482→            </div>
+  1483→          </div>
+  1484→
+  1485→          {/* Contact */}
+  1486→          <div>
+  1487→            <h3 className="font-semibold mb-4">{t('footer.contact', lang)}</h3>
+  1488→            <div className="space-y-2 text-sm text-muted-foreground">
+  1489→              <p>Dakar, Sénégal</p>
+  1490→              <p>contact@sadekhbtp.sn</p>
+  1491→              <p>+221 77 123 45 67</p>
+  1492→            </div>
+  1493→          </div>
+  1494→        </div>
+  1495→
+  1496→        <Separator className="my-8" />
+  1497→
+  1498→        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
+  1499→          <p>© {new Date().getFullYear()} SADEKH BTP. {t('footer.rights', lang)}</p>
+  1500→          <div className="flex gap-4">
+  1501→            <button className="hover:text-foreground transition-colors">{t('footer.legal', lang)}</button>
+  1502→            <button className="hover:text-foreground transition-colors">{t('footer.privacy', lang)}</button>
+  1503→            <button className="hover:text-foreground transition-colors">{t('footer.terms', lang)}</button>
+  1504→          </div>
+  1505→        </div>
+  1506→      </div>
+  1507→    </footer>
+  1508→  );
+  1509→
+  1510→  /* ─── MAIN RENDER ─── */
+  1511→  return (
+  1512→    <div className="min-h-screen flex flex-col">
+  1513→      {renderHeader()}
+  1514→
+  1515→      <main className="flex-1">
+  1516→        <AnimatePresence mode="wait">
+  1517→          {view === 'home' && (
+  1518→            <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+  1519→              {renderHero()}
+  1520→              {/* Featured properties */}
+  1521→              <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
+  1522→                <div className="flex items-center justify-between mb-6">
+  1523→                  <div>
+  1524→                    <h2 className="text-2xl font-bold flex items-center gap-2"><Crown className="w-6 h-6 text-amber-500" /> {lang === 'fr' ? 'Annonces Premium' : 'Waxtu Premium'}</h2>
+  1525→                    <p className="text-muted-foreground text-sm mt-1">{lang === 'fr' ? 'Biens vérifiés et mis en avant par nos agents certifiés' : 'Waxtu yu jàpp, agent yu sertifikat wooynu wane'}</p>
+  1526→                  </div>
+  1527→                  <Button variant="outline" onClick={() => setView('listing')} className="gap-1">
+  1528→                    {t('common.seeAll', lang)} <ChevronRight className="w-4 h-4" />
+  1529→                  </Button>
+  1530→                </div>
+  1531→                {loadingProperties ? (
+  1532→                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+  1533→                    {Array.from({ length: 3 }).map((_, i) => (
+  1534→                      <Card key={i} className="overflow-hidden"><Skeleton className="aspect-[4/3]" /><CardContent className="p-4 space-y-3"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-1/2" /></CardContent></Card>
+  1535→                    ))}
+  1536→                  </div>
+  1537→                ) : (
+  1538→                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+  1539→                    {properties.filter((p) => p.isPremium).slice(0, 3).map(renderPropertyCard)}
+  1540→                  </div>
+  1541→                )}
+  1542→              </section>
+  1543→
+  1544→              {/* Recent properties */}
+  1545→              <section className="bg-muted/50 py-12">
+  1546→                <div className="max-w-7xl mx-auto px-4 sm:px-6">
+  1547→                  <div className="flex items-center justify-between mb-6">
+  1548→                    <div>
+  1549→                      <h2 className="text-2xl font-bold">Dernières annonces</h2>
+  1550→                      <p className="text-muted-foreground text-sm mt-1">{lang === 'fr' ? 'Découvrez les biens récemment publiés' : 'Waxtu yu bees tànneewun'}</p>
+  1551→                    </div>
+  1552→                    <Button variant="outline" onClick={() => { updateFilter('sort', 'recent'); setView('listing'); }} className="gap-1">
+  1553→                      {t('common.seeAll', lang)} <ChevronRight className="w-4 h-4" />
+  1554→                    </Button>
+  1555→                  </div>
+  1556→                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+  1557→                    {properties.slice(0, 8).map(renderPropertyCard)}
+  1558→                  </div>
+  1559→                </div>
+  1560→              </section>
+  1561→
+  1562→              {/* How it works */}
+  1563→              <section className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
+  1564→                <h2 className="text-2xl font-bold text-center mb-10">Comment ça marche ?</h2>
+  1565→                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+  1566→                  {[
+  1567→                    { icon: <Search className="w-7 h-7" />, title: 'Recherchez', desc: 'Parcourez des centaines de maisons, appartements et terrains au Sénégal' },
+  1568→                    { icon: <Heart className="w-7 h-7" />, title: 'Sauvegardez', desc: 'Ajoutez vos biens préférés aux favoris et créez des alertes' },
+  1569→                    { icon: <MessageCircle className="w-7 h-7" />, title: 'Contactez', desc: 'Discutez directement avec les vendeurs via WhatsApp ou messagerie' },
+  1570→                    { icon: <Check className="w-7 h-7" />, title: 'Conclusion', desc: 'Finalisez votre achat en toute sécurité avec les paiements mobiles' },
+  1571→                  ].map((step, i) => (
+  1572→                    <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.15 }}>
+  1573→                      <Card className="p-6 text-center h-full">
+  1574→                        <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center text-primary mx-auto mb-4">
+  1575→                          {step.icon}
+  1576→                        </div>
+  1577→                        <h3 className="font-bold text-lg mb-2">{step.title}</h3>
+  1578→                        <p className="text-sm text-muted-foreground">{step.desc}</p>
+  1579→                      </Card>
+  1580→                    </motion.div>
+  1581→                  ))}
+  1582→                </div>
+  1583→              </section>
+  1584→
+  1585→              {/* Regions */}
+  1586→              <section className="bg-muted/50 py-12">
+  1587→                <div className="max-w-7xl mx-auto px-4 sm:px-6">
+  1588→                  <h2 className="text-2xl font-bold text-center mb-8">{lang === 'fr' ? 'Explorez par région' : 'Seet ci région'}</h2>
+  1589→                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+  1590→                    {REGIONS.slice(0, 6).map((region) => (
+  1591→                      <button
+  1592→                        key={region}
+  1593→                        onClick={() => { updateFilter('region', region); setView('listing'); }}
+  1594→                        className="p-4 bg-card rounded-xl border border-border hover:border-primary hover:shadow-md transition-all text-center"
+  1595→                      >
+  1596→                        <MapPinIcon className="w-6 h-6 mx-auto text-primary mb-2" />
+  1597→                        <span className="font-medium text-sm">{region}</span>
+  1598→                      </button>
+  1599→                    ))}
+  1600→                  </div>
+  1601→                </div>
+  1602→              </section>
+  1603→            </motion.div>
+  1604→          )}
+  1605→
+  1606→          {view === 'listing' && (
+  1607→            <motion.div key="listing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+  1608→              {renderListing()}
+  1609→            </motion.div>
+  1610→          )}
+  1611→
+  1612→          {view === 'favorites' && (
+  1613→            <motion.div key="favorites" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+  1614→              {renderFavorites()}
+  1615→            </motion.div>
+  1616→          )}
+  1617→
+  1618→          {view === 'messages' && (
+  1619→            <motion.div key="messages" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+  1620→              {renderMessages()}
+  1621→            </motion.div>
+  1622→          )}
+  1623→
+  1624→          {view === 'publish' && (
+  1625→            <motion.div key="publish" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+  1626→              {renderPublish()}
+  1627→            </motion.div>
+  1628→          )}
+  1629→
+  1630→          {view === 'dashboard' && (
+  1631→            <motion.div key="dashboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+  1632→              {renderDashboard()}
+  1633→            </motion.div>
+  1634→          )}
+  1635→
+  1636→          {view === 'admin' && (
+  1637→            <motion.div key="admin" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+  1638→              {renderAdmin()}
+  1639→            </motion.div>
+  1640→          )}
+  1641→
+  1642→          {view === 'compare' && (
+  1643→            <motion.div key="compare" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+  1644→              {renderCompare()}
+  1645→            </motion.div>
+  1646→          )}
+  1647→
+  1648→          {view === 'map' && (
+  1649→            <motion.div key="map" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+  1650→              <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+  1651→                <div className="flex items-center gap-3 mb-6">
+  1652→                  <MapIcon className="w-7 h-7 text-primary" />
+  1653→                  <h1 className="text-2xl font-bold">{lang === 'fr' ? 'Vue carte' : 'Kaart'}</h1>
+  1654→                  <Badge variant="secondary">{properties.filter(p => p.lat && p.lng).length} biens géolocalisés</Badge>
+  1655→                </div>
+  1656→                <div className="rounded-xl overflow-hidden border border-border shadow-lg" style={{ height: 'calc(100vh - 200px)' }}>
+  1657→                  <MapView properties={properties} lang={lang} onPropertyClick={openProperty} />
+  1658→                </div>
+  1659→              </div>
+  1660→            </motion.div>
+  1661→          )}
+  1662→        </AnimatePresence>
+  1663→      </main>
+  1664→
+  1665→      {renderFooter()}
+  1666→      {renderPropertyDetail()}
+  1667→      {renderChatbot()}
+  1668→
+  1669→      {/* Payment Modal */}
+  1670→      {paymentProperty && (
+  1671→        <PaymentModal
+  1672→          property={paymentProperty}
+  1673→          lang={lang}
+  1674→          open={true}
+  1675→          onClose={() => setPaymentProperty(null)}
+  1676→          type={paymentType}
+  1677→        />
+  1678→      )}
+  1679→
+  1680→      {/* Auth Modal */}
+  1681→      <AuthModal
+  1682→        open={showAuth}
+  1683→        onClose={() => setShowAuth(false)}
+  1684→        lang={lang}
+  1685→        onLogin={setCurrentUser}
+  1686→      />
+  1687→
+  1688→      {/* Alert Panel */}
+  1689→      {showAlertPanel && (
+  1690→        <motion.div
+  1691→          initial={{ opacity: 0, x: 20 }}
+  1692→          animate={{ opacity: 1, x: 0 }}
+  1693→          exit={{ opacity: 0, x: 20 }}
+  1694→          className="fixed top-20 right-4 z-50 w-80 bg-card border border-border rounded-xl shadow-2xl p-4"
+  1695→        >
+  1696→          <div className="flex items-center justify-between mb-3">
+  1697→            <h3 className="font-semibold flex items-center gap-2"><Bell className="w-4 h-4" /> {lang === 'fr' ? 'Alertes immobilier' : 'Alart immobiliér'}</h3>
+  1698→            <button onClick={() => setShowAlertPanel(false)}><X className="w-4 h-4" /></button>
+  1699→          </div>
+  1700→          <div className="space-y-3">
+  1701→            {currentUser ? (
+  1702→              <>
+  1703→                <div className="grid grid-cols-2 gap-2">
+  1704→                  <Select value={newAlert.type} onValueChange={(v) => setNewAlert({ ...newAlert, type: v })}>
+  1705→                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+  1706→                    <SelectContent>
+  1707→                      <SelectItem value="all">Tous types</SelectItem>
+  1708→                      <SelectItem value="maison">Maisons</SelectItem>
+  1709→                      <SelectItem value="appartement">Apparts</SelectItem>
+  1710→                      <SelectItem value="terrain">Terrains</SelectItem>
+  1711→                      <SelectItem value="plan">Plans</SelectItem>
+  1712→                    </SelectContent>
+  1713→                  </Select>
+  1714→                  <Select value={newAlert.region} onValueChange={(v) => setNewAlert({ ...newAlert, region: v })}>
+  1715→                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+  1716→                    <SelectContent>
+  1717→                      {REGIONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+  1718→                    </SelectContent>
+  1719→                  </Select>
+  1720→                </div>
+  1721→                <Input type="number" placeholder="Budget max (FCFA)" className="h-8 text-xs" value={newAlert.maxPrice} onChange={(e) => setNewAlert({ ...newAlert, maxPrice: e.target.value })} />
+  1722→                <Button size="sm" className="w-full h-8 text-xs" disabled={alertCreating} onClick={async () => {
+  1723→                  setAlertCreating(true);
+  1724→                  try {
+  1725→                    await fetch('/api/alerts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create', ...newAlert }) });
+  1726→                  } catch {}
+  1727→                  setAlertCreating(false);
+  1728→                }}>
+  1729→                  <Bell className="w-3 h-3 mr-1" /> {lang === 'fr' ? 'Créer l\'alerte' : 'Sos alart bi'}
+  1730→                </Button>
+  1731→                <div className="text-xs text-muted-foreground">{lang === 'fr' ? 'Vous recevrez une notification pour chaque nouveau bien correspondant à vos critères.' : 'Dangay jott ndax sax biir bu nocci seen kaalaan.'}</div>
+  1732→              </>
+  1733→            ) : (
+  1734→              <p className="text-sm text-muted-foreground text-center py-4">
+  1735→                {lang === 'fr' ? 'Connectez-vous pour créer des alertes' : 'Seet ngir sos alart'}
+  1736→              </p>
+  1737→            )}
+  1738→          </div>
+  1739→        </motion.div>
+  1740→      )}
+  1741→
+  1742→      {/* Offline indicator */}
+  1743→      {isOffline && (
+  1744→        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-amber-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg flex items-center gap-2">
+  1745→          <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+  1746→          Mode hors ligne
+  1747→        </div>
+  1748→      )}
+  1749→
+  1750→      {/* Compare banner */}
+  1751→      {compareIds.length >= 2 && view !== 'compare' && (
+  1752→        <motion.div
+  1753→          initial={{ y: 100 }}
+  1754→          animate={{ y: 0 }}
+  1755→          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-card border border-border rounded-2xl shadow-2xl px-6 py-3 flex items-center gap-4"
+  1756→        >
+  1757→          <span className="text-sm font-medium">{compareIds.length} biens sélectionnés</span>
+  1758→          <Button size="sm" onClick={() => setView('compare')} className="gap-1">
+  1759→            <ArrowUpDown className="w-4 h-4" /> {t('nav.compare', lang)}
+  1760→          </Button>
+  1761→          <Button size="sm" variant="ghost" onClick={() => setCompareIds([])}>
+  1762→            <X className="w-4 h-4" />
+  1763→          </Button>
+  1764→        </motion.div>
+  1765→      )}
+  1766→    </div>
+  1767→  );
+  1768→}
+  1769→
+  1770→export default function SadekhPage() {
+  1771→  return (
+  1772→    <QueryClientProvider client={queryClient}>
+  1773→      <SadekhApp />
+  1774→    </QueryClientProvider>
+  1775→  );
+  1776→}

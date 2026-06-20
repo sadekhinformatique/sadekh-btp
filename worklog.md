@@ -116,3 +116,25 @@ Stage Summary:
 - All API routes returning 200: /api/properties, /api/stats, /api/messages, /api/favorites, /api/payments
 - Browser-verified: home page, listing with filters, dashboard, admin panel all render correctly
 - PWA (manifest, service worker, OG tags) was already complete
+
+---
+Task ID: 6
+Agent: Main Agent
+Task: Admin protection, AI chatbot upgrade, dead code removal, i18n, payment validation
+
+Work Log:
+- Protected admin view: desktop nav and mobile menu now conditionally render admin item only when `currentUser.profile?.role === 'admin'`
+- Added "not authorized" guard in renderAdmin() with Shield icon and i18n translations
+- Added admin role Badge next to logged-in user name in header
+- Added useEffect on mount to check auth session via /api/auth session action
+- Upgraded chatbot /api/chatbot to use z-ai-web-dev-sdk (glm-4-flash) with conversation history context, falling back to keyword matching
+- Deleted unused src/lib/db.ts (Prisma client, no imports found)
+- Updated Google OAuth redirect to fallback to NEXT_PUBLIC_SUPABASE_URL
+- Added 3 i18n keys (admin.accessDenied, admin.notAdmin, admin.loginRequired) in both fr and wo
+- Enhanced /api/payments: input validation (type, method, amount), UUID-based reference generation, status query param filtering in GET
+
+Stage Summary:
+- Build compiles successfully with all 5 changes
+- Admin panel is now role-protected at UI level
+- Chatbot uses real AI with graceful fallback
+- Payment API has proper validation and filtering

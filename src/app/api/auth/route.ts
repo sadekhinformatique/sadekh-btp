@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     if (action === 'google') {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || ''}/` },
+        options: { redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''}/` },
       });
       if (error) return NextResponse.json({ error: error.message }, { status: 400 });
       return NextResponse.json({ url: data.url });

@@ -129,6 +129,9 @@ const fr: TranslationDict = {
   'admin.approve': 'Approuver',
   'admin.reject': 'Rejeter',
   'admin.ban': 'Bannir',
+  'admin.accessDenied': 'Accès restreint',
+  'admin.notAdmin': 'Seuls les administrateurs peuvent accéder à cette page.',
+  'admin.loginRequired': 'Connectez-vous avec un compte administrateur.',
 
   // Compare
   'compare.title': 'Comparateur de biens',
@@ -284,6 +287,9 @@ const wo: TranslationDict = {
   'admin.approve': 'Jàpp',
   'admin.reject': 'Bañ',
   'admin.ban': 'Bann',
+  'admin.accessDenied': 'Mbàbb nañu la',
+  'admin.notAdmin': 'Waaye jëfandikukat yu admin rekk lañu man a dugg.',
+  'admin.loginRequired': 'Jekkël-leen ak sa buntu admin.',
 
   'compare.title': 'Wone bi',
   'compare.empty': 'Tànne 2-3 ngir wone',

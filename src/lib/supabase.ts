@@ -1,14 +1,22 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://bqqkuxehwaaxkgqqsrnq.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxcWt1eGVod2FheGtncXFzcm5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5Mzg4OTYsImV4cCI6MjA5NzUxNDg5Nn0.NilEF_V1R0He6yoFwGO-MTLQ7CeyzhQQKfRENMKPQEY';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-  },
-});
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn('Supabase URL or Anon Key not set. Check .env.local');
+}
+
+export const supabase = createClient(
+  supabaseUrl || 'https://bqqkuxehwaaxkgqqsrnq.supabase.co',
+  supabaseAnonKey || '',
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+    },
+  }
+);
 
 // Helper: Upload image to Supabase Storage
 export async function uploadImage(file: File, bucket: string = 'properties'): Promise<string | null> {
@@ -72,20 +80,20 @@ export async function getCurrentUser() {
   return user;
 }
 
-// Helper: Initiate Wave payment (placeholder - real integration needs merchant account)
-export async function initiateWavePayment(amount: number, description: string) {
-  // Wave API requires a merchant account. This is a placeholder for the payment flow.
-  // In production, this would call the Wave API to create a payment link.
+// Helper: Initiate Wave payment
+export async function initiateWavePayment(amount: number, description: string, phone: string) {
+  // Wave API requires a merchant account. This simulates the payment flow.
+  // In production, integrate with Wave's checkout API.
   return {
-    paymentUrl: `https://pay.wave.com/checkout/${btoa(JSON.stringify({ amount, description, timestamp: Date.now() }))}`,
+    paymentUrl: `https://pay.wave.com/checkout/${btoa(JSON.stringify({ amount, description, phone, timestamp: Date.now() }))}`,
     reference: `WAVE-${Date.now()}`,
     status: 'pending',
   };
 }
 
-// Helper: Initiate Orange Money payment (placeholder)
+// Helper: Initiate Orange Money payment
 export async function initiateOrangePayment(phone: string, amount: number, description: string) {
-  // Orange Money API requires merchant account. Placeholder for payment flow.
+  // Orange Money API requires merchant account. Simulates the payment flow.
   return {
     paymentUrl: null,
     reference: `OM-${Date.now()}`,

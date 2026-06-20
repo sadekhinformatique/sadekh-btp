@@ -163,6 +163,14 @@ function SadekhApp() {
   const [sendingMsg, setSendingMsg] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
 
+  // Check auth session on mount
+  useEffect(() => {
+    fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'session' }) })
+      .then(r => r.json())
+      .then(data => { if (data.user) setCurrentUser(data.user); })
+      .catch(() => {});
+  }, []);
+
   // Fetch properties
   const { data: propertiesData, isLoading: loadingProperties } = useQuery({
     queryKey: ['properties', filters, page, searchQuery],
@@ -301,7 +309,7 @@ function SadekhApp() {
               { id: 'favorites' as View, label: 'nav.favorites', icon: <Heart className="w-4 h-4" /> },
               { id: 'messages' as View, label: 'nav.messages', icon: <MessageCircle className="w-4 h-4" /> },
               { id: 'dashboard' as View, label: 'nav.dashboard', icon: <BarChart3 className="w-4 h-4" /> },
-              { id: 'admin' as View, label: 'nav.admin', icon: <Shield className="w-4 h-4" /> },
+              ...(currentUser?.profile?.role === 'admin' ? [{ id: 'admin' as View, label: 'nav.admin', icon: <Shield className="w-4 h-4" /> }] : []),
             ].map((item) => (
               <Button
                 key={item.id}
@@ -340,6 +348,9 @@ function SadekhApp() {
                   {currentUser.profile?.fullName?.[0] || currentUser.name?.[0] || 'U'}
                 </div>
                 <span className="hidden sm:inline max-w-[80px] truncate">{currentUser.profile?.fullName || currentUser.name}</span>
+                {currentUser.profile?.role === 'admin' && (
+                  <Badge variant="default" className="text-[9px] px-1 h-4">Admin</Badge>
+                )}
                 <LogOut className="w-3 h-3" />
               </Button>
             ) : (
@@ -393,7 +404,7 @@ function SadekhApp() {
                     { id: 'messages' as View, label: 'nav.messages', icon: <MessageCircle className="w-5 h-5" /> },
                     { id: 'publish' as View, label: 'nav.publish', icon: <Plus className="w-5 h-5" /> },
                     { id: 'dashboard' as View, label: 'nav.dashboard', icon: <BarChart3 className="w-5 h-5" /> },
-                    { id: 'admin' as View, label: 'nav.admin', icon: <Shield className="w-5 h-5" /> },
+                    ...(currentUser?.profile?.role === 'admin' ? [{ id: 'admin' as View, label: 'nav.admin', icon: <Shield className="w-5 h-5" /> }] : []),
                   ].map((item) => (
                     <Button
                       key={item.id}
@@ -1249,7 +1260,18 @@ function SadekhApp() {
   );
 
   /* ─── ADMIN VIEW ─── */
-  const renderAdmin = () => (
+  const renderAdmin = () => {
+    if (!currentUser || currentUser.profile?.role !== 'admin') {
+      return (
+        <div className="max-w-lg mx-auto px-4 py-20 text-center">
+          <Shield className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
+          <h2 className="text-2xl font-bold mb-2">{t('admin.accessDenied', lang)}</h2>
+          <p className="text-muted-foreground">{t('admin.notAdmin', lang)}</p>
+          <p className="text-sm text-muted-foreground mt-2">{t('admin.loginRequired', lang)}</p>
+        </div>
+      );
+    }
+    return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
       <div className="flex items-center gap-3 mb-6">
         <Shield className="w-7 h-7 text-primary" />
@@ -1316,7 +1338,8 @@ function SadekhApp() {
         </div>
       </Card>
     </div>
-  );
+    );
+  };
 
   /* ─── COMPARE VIEW ─── */
   const renderCompare = () => {
@@ -1423,7 +1446,7 @@ function SadekhApp() {
                     (e.target as HTMLInputElement).value = '';
                     setChatLoading(true);
                     try {
-                      const res = await fetch('/api/chatbot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: val }) });
+                      const res = await fetch('/api/chatbot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: val, history: [...chatMessages, userMsg] }) });
                       const data = await res.json();
                       setChatMessages((prev) => [...prev, { role: 'assistant', content: data.response || 'Désolé, une erreur est survenue.' }]);
                     } catch {

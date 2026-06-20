@@ -1,11 +1,11 @@
 import { Pool, type PoolConfig } from 'pg';
 
 const poolConfig: PoolConfig = {
-  host: 'aws-0-eu-west-3.pooler.supabase.com',
-  port: 6543,
-  database: 'postgres',
-  user: 'postgres.bqqkuxehwaaxkgqqsrnq',
-  password: 'Dspro1814@2027',
+  host: process.env.DB_HOST || 'aws-0-eu-west-3.pooler.supabase.com',
+  port: parseInt(process.env.DB_PORT || '6543'),
+  database: process.env.DB_NAME || 'postgres',
+  user: process.env.DB_USER || 'postgres.bqqkuxehwaaxkgqqsrnq',
+  password: process.env.DB_PASSWORD || '',
   max: 10,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000,
