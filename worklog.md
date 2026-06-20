@@ -90,4 +90,29 @@ Stage Summary:
 - Functional alert creation panel
 - Working message sending
 - Offline indicator
-- Payment tracking in database
+- Payment tracking in database---
+Task ID: 1-5
+Agent: Main Agent
+Task: Complete 5 enhancement steps for SADEKH BTP
+
+Work Log:
+- Fixed critical SSR crash: changed `useState` to `useEffect` for offline detection (line 212)
+- Added `useEffect` and `useCallback` imports
+- Added `metadataBase` to layout.tsx to fix OG image warnings
+- Created GpsPicker component with MapLibre GL, location search, geolocation, draggable marker
+- Integrated GpsPicker into publish form step 4 (GPS location selection)
+- Added payment history section to dashboard view with payment type icons and status badges
+- Added payments API query with TanStack Query
+- Created chatbot API route (/api/chatbot) with knowledge base for real estate Q&A
+- Updated chatbot UI: real API integration, loading state, multi-line support, welcome message
+- Created sitemap.ts and robots.ts for SEO
+- Made home page text bilingual (FR/Wolof) for Premium, Recent, and Region sections
+- Added Crown icon to Premium section heading
+- Updated publishForm state to include lat/lng fields
+
+Stage Summary:
+- All 5 tasks completed successfully
+- Supabase connection verified: 6 profiles, 16 properties, 3 favorites, 4 messages in DB
+- All API routes returning 200: /api/properties, /api/stats, /api/messages, /api/favorites, /api/payments
+- Browser-verified: home page, listing with filters, dashboard, admin panel all render correctly
+- PWA (manifest, service worker, OG tags) was already complete

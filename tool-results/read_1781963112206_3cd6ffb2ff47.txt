@@ -1,0 +1,697 @@
+     1→  1030→
+     2→  1031→        <Card className="p-6">
+     3→  1032→          {step === 1 && (
+     4→  1033→            <div className="space-y-6">
+     5→  1034→              <h3 className="text-lg font-semibold">{t('publish.step1', lang)}</h3>
+     6→  1035→              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+     7→  1036→                {['maison', 'appartement', 'terrain', 'plan'].map((type) => (
+     8→  1037→                  <button
+     9→  1038→                    key={type}
+    10→  1039→                    onClick={() => setPublishForm({ ...form, type })}
+    11→  1040→                    className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${
+    12→  1041→                      form.type === type ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+    13→  1042→                    }`}
+    14→  1043→                  >
+    15→  1044→                    {TYPE_ICONS[type]}
+    16→  1045→                    <span className="text-sm font-medium">{t(`filter.${type}`, lang)}</span>
+    17→  1046→                  </button>
+    18→  1047→                ))}
+    19→  1048→              </div>
+    20→  1049→            </div>
+    21→  1050→          )}
+    22→  1051→
+    23→  1052→          {step === 2 && (
+    24→  1053→            <div className="space-y-4">
+    25→  1054→              <h3 className="text-lg font-semibold">{t('publish.step2', lang)}</h3>
+    26→  1055→              <div>
+    27→  1056→                <Label>{t('publish.title.label', lang)}</Label>
+    28→  1057→                <Input className="mt-1" value={form.title} onChange={(e) => setPublishForm({ ...form, title: e.target.value })} placeholder="Villa 4 chambres — Almadies" />
+    29→  1058→              </div>
+    30→  1059→              <div>
+    31→  1060→                <Label>{t('publish.description.label', lang)}</Label>
+    32→  1061→                <Textarea className="mt-1" rows={4} value={form.description} onChange={(e) => setPublishForm({ ...form, description: e.target.value })} placeholder="Décrivez votre bien..." />
+    33→  1062→                <Button variant="ghost" size="sm" className="mt-1 gap-1 text-primary">
+    34→  1063→                  <Sparkles className="w-3.5 h-3.5" /> {t('publish.ai.desc', lang)}
+    35→  1064→                </Button>
+    36→  1065→              </div>
+    37→  1066→              <div className="grid grid-cols-2 gap-4">
+    38→  1067→                <div>
+    39→  1068→                  <Label>{t('publish.price.label', lang)}</Label>
+    40→  1069→                  <Input type="number" className="mt-1" value={form.price} onChange={(e) => setPublishForm({ ...form, price: e.target.value })} placeholder="75000000" />
+    41→  1070→                </div>
+    42→  1071→                <div>
+    43→  1072→                  <Label>{t('publish.surface.label', lang)}</Label>
+    44→  1073→                  <Input type="number" className="mt-1" value={form.surfaceM2} onChange={(e) => setPublishForm({ ...form, surfaceM2: e.target.value })} placeholder="200" />
+    45→  1074→                </div>
+    46→  1075→              </div>
+    47→  1076→              <div>
+    48→  1077→                <Label>{t('publish.rooms.label', lang)}</Label>
+    49→  1078→                <Input type="number" className="mt-1" value={form.rooms} onChange={(e) => setPublishForm({ ...form, rooms: e.target.value })} placeholder="4" />
+    50→  1079→              </div>
+    51→  1080→              <div className="flex gap-4">
+    52→  1081→                <label className="flex items-center gap-2 cursor-pointer">
+    53→  1082→                  <Checkbox checked={form.priceNegotiable} onCheckedChange={(v) => setPublishForm({ ...form, priceNegotiable: !!v })} />
+    54→  1083→                  <span className="text-sm">{t('publish.negotiable', lang)}</span>
+    55→  1084→                </label>
+    56→  1085→                <label className="flex items-center gap-2 cursor-pointer">
+    57→  1086→                  <Checkbox checked={form.titleFoncier} onCheckedChange={(v) => setPublishForm({ ...form, titleFoncier: !!v })} />
+    58→  1087→                  <span className="text-sm">{t('publish.foncier', lang)}</span>
+    59→  1088→                </label>
+    60→  1089→              </div>
+    61→  1090→            </div>
+    62→  1091→          )}
+    63→  1092→
+    64→  1093→          {step === 3 && (
+    65→  1094→            <div className="space-y-4">
+    66→  1095→              <h3 className="text-lg font-semibold">{t('publish.step3', lang)}</h3>
+    67→  1096→              <div className="border-2 border-dashed border-border rounded-xl p-12 text-center">
+    68→  1097→                <ImageIcon className="w-12 h-12 mx-auto text-muted-foreground/40 mb-3" />
+    69→  1098→                <p className="text-muted-foreground mb-2">{t('publish.photos', lang)}</p>
+    70→  1099→                <Button variant="outline" size="sm">Choisir des fichiers</Button>
+    71→  1100→                <p className="text-xs text-muted-foreground mt-2">JPG, PNG, WebP. Max 5MB par photo.</p>
+    72→  1101→              </div>
+    73→  1102→            </div>
+    74→  1103→          )}
+    75→  1104→
+    76→  1105→          {step === 4 && (
+    77→  1106→            <div className="space-y-4">
+    78→  1107→              <h3 className="text-lg font-semibold">{t('publish.step4', lang)}</h3>
+    79→  1108→              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    80→  1109→                <div>
+    81→  1110→                  <Label>{t('publish.region.label', lang)}</Label>
+    82→  1111→                  <Select value={form.region} onValueChange={(v) => setPublishForm({ ...form, region: v })}>
+    83→  1112→                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+    84→  1113→                    <SelectContent>{REGIONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+    85→  1114→                  </Select>
+    86→  1115→                </div>
+    87→  1116→                <div>
+    88→  1117→                  <Label>{t('publish.city.label', lang)}</Label>
+    89→  1118→                  <Input className="mt-1" value={form.city} onChange={(e) => setPublishForm({ ...form, city: e.target.value })} placeholder="Dakar" />
+    90→  1119→                </div>
+    91→  1120→                <div>
+    92→  1121→                  <Label>{t('publish.quartier.label', lang)}</Label>
+    93→  1122→                  <Input className="mt-1" value={form.quartier} onChange={(e) => setPublishForm({ ...form, quartier: e.target.value })} placeholder="Almadies" />
+    94→  1123→                </div>
+    95→  1124→              </div>
+    96→  1125→            </div>
+    97→  1126→          )}
+    98→  1127→
+    99→  1128→          {/* Navigation */}
+   100→  1129→          <div className="flex justify-between mt-8">
+   101→  1130→            <Button variant="outline" onClick={() => step > 1 ? setPublishStep(step - 1) : setView('home')}>
+   102→  1131→              {step > 1 ? <ChevronLeft className="w-4 h-4 mr-1" /> : null}
+   103→  1132→              {step > 1 ? '' : t('common.cancel', lang)}
+   104→  1133→            </Button>
+   105→  1134→            {step < 4 ? (
+   106→  1135→              <Button onClick={() => setPublishStep(step + 1)}>
+   107→  1136→                {t('common.save', lang)} <ChevronRight className="w-4 h-4 ml-1" />
+   108→  1137→              </Button>
+   109→  1138→            ) : (
+   110→  1139→              <Button onClick={handleSubmit} disabled={publishing} className="gap-2">
+   111→  1140→                <Zap className="w-4 h-4" />
+   112→  1141→                {t('publish.submit', lang)}
+   113→  1142→              </Button>
+   114→  1143→            )}
+   115→  1144→          </div>
+   116→  1145→        </Card>
+   117→  1146→      </div>
+   118→  1147→    );
+   119→  1148→  };
+   120→  1149→
+   121→  1150→  /* ─── DASHBOARD VIEW ─── */
+   122→  1151→  const renderDashboard = () => (
+   123→  1152→    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+   124→  1153→      <div className="flex items-center gap-3 mb-6">
+   125→  1154→        <BarChart3 className="w-7 h-7 text-primary" />
+   126→  1155→        <h1 className="text-2xl font-bold">{t('dashboard.title', lang)}</h1>
+   127→  1156→      </div>
+   128→  1157→
+   129→  1158→      {/* Stats cards */}
+   130→  1159→      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+   131→  1160→        {[
+   132→  1161→          { label: t('dashboard.activeProperties', lang), value: stats?.activeProperties || 16, icon: <Building className="w-5 h-5" />, color: 'text-green-600 bg-green-100 dark:bg-green-900/30' },
+   133→  1162→          { label: t('dashboard.totalViews', lang), value: stats?.totalViews || 0, icon: <Eye className="w-5 h-5" />, color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30' },
+   134→  1163→          { label: t('dashboard.totalContacts', lang), value: stats?.totalMessages || 4, icon: <MessageCircle className="w-5 h-5" />, color: 'text-purple-600 bg-purple-100 dark:bg-purple-900/30' },
+   135→  1164→          { label: t('dashboard.payments', lang), value: stats?.premiumProperties || 0, icon: <HandCoins className="w-5 h-5" />, color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30' },
+   136→  1165→        ].map((stat) => (
+   137→  1166→          <Card key={stat.label} className="p-4">
+   138→  1167→            <div className="flex items-center justify-between mb-3">
+   139→  1168→              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${stat.color}`}>{stat.icon}</div>
+   140→  1169→            </div>
+   141→  1170→            <div className="text-2xl font-bold">{stat.value}</div>
+   142→  1171→            <div className="text-sm text-muted-foreground">{stat.label}</div>
+   143→  1172→          </Card>
+   144→  1173→        ))}
+   145→  1174→      </div>
+   146→  1175→
+   147→  1176→      {/* My properties */}
+   148→  1177→      <div className="mb-8">
+   149→  1178→        <div className="flex items-center justify-between mb-4">
+   150→  1179→          <h2 className="text-lg font-semibold">{t('dashboard.myProperties', lang)}</h2>
+   151→  1180→          <Button size="sm" onClick={() => setView('publish')} className="gap-1"><Plus className="w-4 h-4" /> {t('nav.publish', lang)}</Button>
+   152→  1181→        </div>
+   153→  1182→        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+   154→  1183→          {properties.slice(0, 6).map(renderPropertyCard)}
+   155→  1184→        </div>
+   156→  1185→      </div>
+   157→  1186→
+   158→  1187→      {/* Recent messages */}
+   159→  1188→      <Card className="p-4">
+   160→  1189→        <h2 className="text-lg font-semibold mb-4">{t('dashboard.recentMessages', lang)}</h2>
+   161→  1190→        <div className="space-y-3">
+   162→  1191→          {(messages || []).slice(0, 5).map((m: Message) => (
+   163→  1192→            <div key={m.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+   164→  1193→              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+   165→  1194→                {(m.sender?.profile?.fullName || m.sender?.name || '?')[0]}
+   166→  1195→              </div>
+   167→  1196→              <div className="flex-1 min-w-0">
+   168→  1197→                <div className="text-sm font-medium">{m.sender?.profile?.fullName || m.sender?.name}</div>
+   169→  1198→                <div className="text-xs text-muted-foreground truncate">{m.content}</div>
+   170→  1199→              </div>
+   171→  1200→              <div className="text-xs text-muted-foreground shrink-0">{new Date(m.createdAt).toLocaleDateString('fr-FR')}</div>
+   172→  1201→            </div>
+   173→  1202→          ))}
+   174→  1203→        </div>
+   175→  1204→      </Card>
+   176→  1205→    </div>
+   177→  1206→  );
+   178→  1207→
+   179→  1208→  /* ─── ADMIN VIEW ─── */
+   180→  1209→  const renderAdmin = () => (
+   181→  1210→    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+   182→  1211→      <div className="flex items-center gap-3 mb-6">
+   183→  1212→        <Shield className="w-7 h-7 text-primary" />
+   184→  1213→        <h1 className="text-2xl font-bold">{t('admin.title', lang)}</h1>
+   185→  1214→      </div>
+   186→  1215→
+   187→  1216→      {/* Admin stats */}
+   188→  1217→      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+   189→  1218→        {[
+   190→  1219→          { label: t('admin.users', lang), value: stats?.totalUsers || 6, icon: <Users className="w-5 h-5" /> },
+   191→  1220→          { label: t('hero.stats.properties', lang), value: stats?.totalProperties || 16, icon: <Building className="w-5 h-5" /> },
+   192→  1221→          { label: t('admin.reports', lang), value: 0, icon: <AlertTriangle className="w-5 h-5" /> },
+   193→  1222→          { label: t('admin.revenue', lang), value: `${((stats?.premiumProperties || 0) * 5000).toLocaleString()} F`, icon: <TrendingUp className="w-5 h-5" /> },
+   194→  1223→        ].map((stat) => (
+   195→  1224→          <Card key={stat.label} className="p-4">
+   196→  1225→            <div className="flex items-center gap-2 mb-2 text-muted-foreground">{stat.icon} {stat.label}</div>
+   197→  1226→            <div className="text-2xl font-bold">{stat.value}</div>
+   198→  1227→          </Card>
+   199→  1228→        ))}
+   200→  1229→      </div>
+   201→  1230→
+   202→  1231→      {/* Properties by type */}
+   203→  1232→      {stats?.propertiesByType && (
+   204→  1233→        <Card className="p-6 mb-8">
+   205→  1234→          <h2 className="text-lg font-semibold mb-4">{t('dashboard.stats', lang)}</h2>
+   206→  1235→          <div className="space-y-3">
+   207→  1236→            {stats.propertiesByType.map((item: any) => (
+   208→  1237→              <div key={item.type} className="flex items-center gap-4">
+   209→  1238→                <div className="flex items-center gap-2 w-32">
+   210→  1239→                  {TYPE_ICONS[item.type]}
+   211→  1240→                  <span className="text-sm font-medium">{t(`filter.${item.type}`, lang)}</span>
+   212→  1241→                </div>
+   213→  1242→                <div className="flex-1 bg-muted rounded-full h-3 overflow-hidden">
+   214→  1243→                  <motion.div
+   215→  1244→                    initial={{ width: 0 }}
+   216→  1245→                    animate={{ width: `${(item._count.id / (stats.totalProperties || 1)) * 100}%` }}
+   217→  1246→                    transition={{ duration: 0.8, ease: 'easeOut' }}
+   218→  1247→                    className="h-full bg-primary rounded-full"
+   219→  1248→                  />
+   220→  1249→                </div>
+   221→  1250→                <span className="text-sm font-bold w-8 text-right">{item._count.id}</span>
+   222→  1251→              </div>
+   223→  1252→            ))}
+   224→  1253→          </div>
+   225→  1254→        </Card>
+   226→  1255→      )}
+   227→  1256→
+   228→  1257→      {/* Top properties */}
+   229→  1258→      <Card className="p-6">
+   230→  1259→        <h2 className="text-lg font-semibold mb-4">Top annonces</h2>
+   231→  1260→        <div className="space-y-3">
+   232→  1261→          {(stats?.recentProperties || []).map((p: any, i: number) => (
+   233→  1262→            <div key={p.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+   234→  1263→              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">{i + 1}</div>
+   235→  1264→              <div className="flex-1 min-w-0">
+   236→  1265→                <div className="font-medium text-sm truncate">{p.title}</div>
+   237→  1266→                <div className="text-xs text-muted-foreground">{t(`filter.${p.type}`, lang)} · {formatPrice(p.price, lang)}</div>
+   238→  1267→              </div>
+   239→  1268→              <div className="text-sm text-muted-foreground flex items-center gap-1">
+   240→  1269→                <Eye className="w-3.5 h-3.5" /> {p.viewsCount}
+   241→  1270→              </div>
+   242→  1271→            </div>
+   243→  1272→          ))}
+   244→  1273→        </div>
+   245→  1274→      </Card>
+   246→  1275→    </div>
+   247→  1276→  );
+   248→  1277→
+   249→  1278→  /* ─── COMPARE VIEW ─── */
+   250→  1279→  const renderCompare = () => {
+   251→  1280→    const compareProperties = properties.filter((p) => compareIds.includes(p.id));
+   252→  1281→    if (compareIds.length < 2) {
+   253→  1282→      return (
+   254→  1283→        <div className="max-w-3xl mx-auto px-4 py-20 text-center">
+   255→  1284→          <ArrowUpDown className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
+   256→  1285→          <h2 className="text-2xl font-bold mb-2">{t('compare.title', lang)}</h2>
+   257→  1286→          <p className="text-muted-foreground">{t('compare.empty', lang)}</p>
+   258→  1287→        </div>
+   259→  1288→      );
+   260→  1289→    }
+   261→  1290→    return (
+   262→  1291→      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+   263→  1292→        <h1 className="text-2xl font-bold mb-6">{t('compare.title', lang)}</h1>
+   264→  1293→        <div className="overflow-x-auto">
+   265→  1294→          <table className="w-full">
+   266→  1295→            <thead>
+   267→  1296→              <tr>
+   268→  1297→                <th className="p-3 text-left w-40" />
+   269→  1298→                {compareProperties.map((p) => (
+   270→  1299→                  <th key={p.id} className="p-3 text-left min-w-[250px]">
+   271→  1300→                    <img src={p.images[0]} alt="" className="w-full h-40 object-cover rounded-lg mb-2" />
+   272→  1301→                    <div className="font-semibold">{p.title}</div>
+   273→  1302→                  </th>
+   274→  1303→                ))}
+   275→  1304→              </tr>
+   276→  1305→            </thead>
+   277→  1306→            <tbody>
+   278→  1307→              {[
+   279→  1308→                { label: 'Prix', render: (p: Property) => formatPrice(p.price, lang) },
+   280→  1309→                { label: 'Type', render: (p: Property) => t(`filter.${p.type}`, lang) },
+   281→  1310→                { label: 'Surface', render: (p: Property) => p.surfaceM2 ? `${p.surfaceM2} m²` : '—' },
+   282→  1311→                { label: 'Pièces', render: (p: Property) => p.rooms || '—' },
+   283→  1312→                { label: 'Région', render: (p: Property) => p.region },
+   284→  1313→                { label: 'Quartier', render: (p: Property) => p.quartier },
+   285→  1314→                { label: 'Titre foncier', render: (p: Property) => p.titleFoncier ? <Check className="w-5 h-5 text-green-600" /> : <X className="w-5 h-5 text-red-400" /> },
+   286→  1315→                { label: 'Négociable', render: (p: Property) => p.priceNegotiable ? <Check className="w-5 h-5 text-green-600" /> : <X className="w-5 h-5 text-red-400" /> },
+   287→  1316→                { label: 'Vues', render: (p: Property) => p.viewsCount },
+   288→  1317→                { label: 'Premium', render: (p: Property) => p.isPremium ? <Crown className="w-5 h-5 text-amber-500" /> : <X className="w-5 h-5 text-muted-foreground" /> },
+   289→  1318→              ].map((row) => (
+   290→  1319→                <tr key={row.label} className="border-t border-border">
+   291→  1320→                  <td className="p-3 font-medium text-sm text-muted-foreground">{row.label}</td>
+   292→  1321→                  {compareProperties.map((p) => (
+   293→  1322→                    <td key={p.id} className="p-3 text-sm">{row.render(p)}</td>
+   294→  1323→                  ))}
+   295→  1324→                </tr>
+   296→  1325→              ))}
+   297→  1326→            </tbody>
+   298→  1327→          </table>
+   299→  1328→        </div>
+   300→  1329→      </div>
+   301→  1330→    );
+   302→  1331→  };
+   303→  1332→
+   304→  1333→  /* ─── CHATBOT ─── */
+   305→  1334→  const renderChatbot = () => (
+   306→  1335→    <div className="fixed bottom-6 right-6 z-50">
+   307→  1336→      <AnimatePresence>
+   308→  1337→        {showChatbot && (
+   309→  1338→          <motion.div
+   310→  1339→            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+   311→  1340→            animate={{ opacity: 1, y: 0, scale: 1 }}
+   312→  1341→            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+   313→  1342→            className="mb-3 w-[360px] max-h-[500px] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+   314→  1343→          >
+   315→  1344→            <div className="bg-primary text-primary-foreground p-4 flex items-center gap-3">
+   316→  1345→              <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
+   317→  1346→                <Bot className="w-5 h-5" />
+   318→  1347→              </div>
+   319→  1348→              <div>
+   320→  1349→                <div className="font-semibold">{t('chatbot.title', lang)}</div>
+   321→  1350→                <div className="text-xs text-primary-foreground/70">Claude Sonnet 4</div>
+   322→  1351→              </div>
+   323→  1352→              <button onClick={() => setShowChatbot(false)} className="ml-auto w-8 h-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30">
+   324→  1353→                <X className="w-4 h-4" />
+   325→  1354→              </button>
+   326→  1355→            </div>
+   327→  1356→            <ScrollArea className="flex-1 p-4 max-h-[350px]">
+   328→  1357→              {chatMessages.map((msg, i) => (
+   329→  1358→                <div key={i} className={`flex mb-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+   330→  1359→                  <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm ${
+   331→  1360→                    msg.role === 'user'
+   332→  1361→                      ? 'bg-primary text-primary-foreground rounded-br-md'
+   333→  1362→                      : 'bg-muted rounded-bl-md'
+   334→  1363→                  }`}>
+   335→  1364→                    {t(msg.content, lang)}
+   336→  1365→                  </div>
+   337→  1366→                </div>
+   338→  1367→              ))}
+   339→  1368→            </ScrollArea>
+   340→  1369→            <div className="p-3 border-t border-border flex gap-2">
+   341→  1370→              <Input
+   342→  1371→                placeholder={t('chatbot.placeholder', lang)}
+   343→  1372→                className="flex-1 h-9 text-sm"
+   344→  1373→                onKeyDown={(e) => {
+   345→  1374→                  if (e.key === 'Enter' && (e.target as HTMLInputElement).value.trim()) {
+   346→  1375→                    setChatMessages((prev) => [...prev, { role: 'user', content: (e.target as HTMLInputElement).value }]);
+   347→  1376→                    (e.target as HTMLInputElement).value = '';
+   348→  1377→                    setTimeout(() => {
+   349→  1378→                      setChatMessages((prev) => [...prev, {
+   350→  1379→                        role: 'assistant',
+   351→  1380→                        content: 'Je peux vous aider à trouver le bien parfait ! Essayez nos filtres pour affiner votre recherche.',
+   352→  1381→                      }]);
+   353→  1382→                    }, 1000);
+   354→  1383→                  }
+   355→  1384→                }}
+   356→  1385→              />
+   357→  1386→              <Button size="icon" className="h-9 w-9"><Send className="w-4 h-4" /></Button>
+   358→  1387→            </div>
+   359→  1388→          </motion.div>
+   360→  1389→        )}
+   361→  1390→      </AnimatePresence>
+   362→  1391→      <motion.button
+   363→  1392→        whileHover={{ scale: 1.1 }}
+   364→  1393→        whileTap={{ scale: 0.9 }}
+   365→  1394→        onClick={() => setShowChatbot(!showChatbot)}
+   366→  1395→        className="w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-xl flex items-center justify-center hover:bg-primary/90 transition-colors"
+   367→  1396→      >
+   368→  1397→        {showChatbot ? <X className="w-6 h-6" /> : <Bot className="w-6 h-6" />}
+   369→  1398→      </motion.button>
+   370→  1399→    </div>
+   371→  1400→  );
+   372→  1401→
+   373→  1402→  /* ─── FOOTER ─── */
+   374→  1403→  const renderFooter = () => (
+   375→  1404→    <footer className="bg-card border-t border-border mt-auto">
+   376→  1405→      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
+   377→  1406→        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+   378→  1407→          {/* About */}
+   379→  1408→          <div className="md:col-span-2">
+   380→  1409→            <div className="flex items-center gap-2 mb-4">
+   381→  1410→              <img src="/logo-sadekh.png" alt="SADEKH BTP" className="h-8 w-8 rounded-full" />
+   382→  1411→              <span className="font-bold text-lg">SADEKH <span className="text-amber-600">BTP</span></span>
+   383→  1412→            </div>
+   384→  1413→            <p className="text-muted-foreground text-sm leading-relaxed max-w-md">
+   385→  1414→              {t('footer.about.desc', lang)}
+   386→  1415→            </p>
+   387→  1416→            <div className="flex gap-3 mt-4">
+   388→  1417→              {['Wave', 'Orange Money'].map((m) => (
+   389→  1418→                <Badge key={m} variant="outline" className="text-xs">{m}</Badge>
+   390→  1419→              ))}
+   391→  1420→            </div>
+   392→  1421→          </div>
+   393→  1422→
+   394→  1423→          {/* Quick links */}
+   395→  1424→          <div>
+   396→  1425→            <h3 className="font-semibold mb-4">{t('footer.links', lang)}</h3>
+   397→  1426→            <div className="space-y-2">
+   398→  1427→              {['maison', 'appartement', 'terrain', 'plan'].map((type) => (
+   399→  1428→                <button key={type} onClick={() => { updateFilter('type', type); setView('listing'); }} className="block text-sm text-muted-foreground hover:text-foreground transition-colors">
+   400→  1429→                  {t(`filter.${type}`, lang)}
+   401→  1430→                </button>
+   402→  1431→              ))}
+   403→  1432→            </div>
+   404→  1433→          </div>
+   405→  1434→
+   406→  1435→          {/* Contact */}
+   407→  1436→          <div>
+   408→  1437→            <h3 className="font-semibold mb-4">{t('footer.contact', lang)}</h3>
+   409→  1438→            <div className="space-y-2 text-sm text-muted-foreground">
+   410→  1439→              <p>Dakar, Sénégal</p>
+   411→  1440→              <p>contact@sadekhbtp.sn</p>
+   412→  1441→              <p>+221 77 123 45 67</p>
+   413→  1442→            </div>
+   414→  1443→          </div>
+   415→  1444→        </div>
+   416→  1445→
+   417→  1446→        <Separator className="my-8" />
+   418→  1447→
+   419→  1448→        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
+   420→  1449→          <p>© {new Date().getFullYear()} SADEKH BTP. {t('footer.rights', lang)}</p>
+   421→  1450→          <div className="flex gap-4">
+   422→  1451→            <button className="hover:text-foreground transition-colors">{t('footer.legal', lang)}</button>
+   423→  1452→            <button className="hover:text-foreground transition-colors">{t('footer.privacy', lang)}</button>
+   424→  1453→            <button className="hover:text-foreground transition-colors">{t('footer.terms', lang)}</button>
+   425→  1454→          </div>
+   426→  1455→        </div>
+   427→  1456→      </div>
+   428→  1457→    </footer>
+   429→  1458→  );
+   430→  1459→
+   431→  1460→  /* ─── MAIN RENDER ─── */
+   432→  1461→  return (
+   433→  1462→    <div className="min-h-screen flex flex-col">
+   434→  1463→      {renderHeader()}
+   435→  1464→
+   436→  1465→      <main className="flex-1">
+   437→  1466→        <AnimatePresence mode="wait">
+   438→  1467→          {view === 'home' && (
+   439→  1468→            <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+   440→  1469→              {renderHero()}
+   441→  1470→              {/* Featured properties */}
+   442→  1471→              <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
+   443→  1472→                <div className="flex items-center justify-between mb-6">
+   444→  1473→                  <div>
+   445→  1474→                    <h2 className="text-2xl font-bold">Annonces Premium</h2>
+   446→  1475→                    <p className="text-muted-foreground text-sm mt-1">Biens vérifiés et mis en avant par nos agents certifiés</p>
+   447→  1476→                  </div>
+   448→  1477→                  <Button variant="outline" onClick={() => setView('listing')} className="gap-1">
+   449→  1478→                    {t('common.seeAll', lang)} <ChevronRight className="w-4 h-4" />
+   450→  1479→                  </Button>
+   451→  1480→                </div>
+   452→  1481→                {loadingProperties ? (
+   453→  1482→                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+   454→  1483→                    {Array.from({ length: 3 }).map((_, i) => (
+   455→  1484→                      <Card key={i} className="overflow-hidden"><Skeleton className="aspect-[4/3]" /><CardContent className="p-4 space-y-3"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-1/2" /></CardContent></Card>
+   456→  1485→                    ))}
+   457→  1486→                  </div>
+   458→  1487→                ) : (
+   459→  1488→                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+   460→  1489→                    {properties.filter((p) => p.isPremium).slice(0, 3).map(renderPropertyCard)}
+   461→  1490→                  </div>
+   462→  1491→                )}
+   463→  1492→              </section>
+   464→  1493→
+   465→  1494→              {/* Recent properties */}
+   466→  1495→              <section className="bg-muted/50 py-12">
+   467→  1496→                <div className="max-w-7xl mx-auto px-4 sm:px-6">
+   468→  1497→                  <div className="flex items-center justify-between mb-6">
+   469→  1498→                    <div>
+   470→  1499→                      <h2 className="text-2xl font-bold">Dernières annonces</h2>
+   471→  1500→                      <p className="text-muted-foreground text-sm mt-1">Découvrez les biens récemment publiés</p>
+   472→  1501→                    </div>
+   473→  1502→                    <Button variant="outline" onClick={() => { updateFilter('sort', 'recent'); setView('listing'); }} className="gap-1">
+   474→  1503→                      {t('common.seeAll', lang)} <ChevronRight className="w-4 h-4" />
+   475→  1504→                    </Button>
+   476→  1505→                  </div>
+   477→  1506→                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+   478→  1507→                    {properties.slice(0, 8).map(renderPropertyCard)}
+   479→  1508→                  </div>
+   480→  1509→                </div>
+   481→  1510→              </section>
+   482→  1511→
+   483→  1512→              {/* How it works */}
+   484→  1513→              <section className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
+   485→  1514→                <h2 className="text-2xl font-bold text-center mb-10">Comment ça marche ?</h2>
+   486→  1515→                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+   487→  1516→                  {[
+   488→  1517→                    { icon: <Search className="w-7 h-7" />, title: 'Recherchez', desc: 'Parcourez des centaines de maisons, appartements et terrains au Sénégal' },
+   489→  1518→                    { icon: <Heart className="w-7 h-7" />, title: 'Sauvegardez', desc: 'Ajoutez vos biens préférés aux favoris et créez des alertes' },
+   490→  1519→                    { icon: <MessageCircle className="w-7 h-7" />, title: 'Contactez', desc: 'Discutez directement avec les vendeurs via WhatsApp ou messagerie' },
+   491→  1520→                    { icon: <Check className="w-7 h-7" />, title: 'Conclusion', desc: 'Finalisez votre achat en toute sécurité avec les paiements mobiles' },
+   492→  1521→                  ].map((step, i) => (
+   493→  1522→                    <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.15 }}>
+   494→  1523→                      <Card className="p-6 text-center h-full">
+   495→  1524→                        <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center text-primary mx-auto mb-4">
+   496→  1525→                          {step.icon}
+   497→  1526→                        </div>
+   498→  1527→                        <h3 className="font-bold text-lg mb-2">{step.title}</h3>
+   499→  1528→                        <p className="text-sm text-muted-foreground">{step.desc}</p>
+   500→  1529→                      </Card>
+   501→  1530→                    </motion.div>
+   502→  1531→                  ))}
+   503→  1532→                </div>
+   504→  1533→              </section>
+   505→  1534→
+   506→  1535→              {/* Regions */}
+   507→  1536→              <section className="bg-muted/50 py-12">
+   508→  1537→                <div className="max-w-7xl mx-auto px-4 sm:px-6">
+   509→  1538→                  <h2 className="text-2xl font-bold text-center mb-8">Explorez par région</h2>
+   510→  1539→                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+   511→  1540→                    {REGIONS.slice(0, 6).map((region) => (
+   512→  1541→                      <button
+   513→  1542→                        key={region}
+   514→  1543→                        onClick={() => { updateFilter('region', region); setView('listing'); }}
+   515→  1544→                        className="p-4 bg-card rounded-xl border border-border hover:border-primary hover:shadow-md transition-all text-center"
+   516→  1545→                      >
+   517→  1546→                        <MapPinIcon className="w-6 h-6 mx-auto text-primary mb-2" />
+   518→  1547→                        <span className="font-medium text-sm">{region}</span>
+   519→  1548→                      </button>
+   520→  1549→                    ))}
+   521→  1550→                  </div>
+   522→  1551→                </div>
+   523→  1552→              </section>
+   524→  1553→            </motion.div>
+   525→  1554→          )}
+   526→  1555→
+   527→  1556→          {view === 'listing' && (
+   528→  1557→            <motion.div key="listing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+   529→  1558→              {renderListing()}
+   530→  1559→            </motion.div>
+   531→  1560→          )}
+   532→  1561→
+   533→  1562→          {view === 'favorites' && (
+   534→  1563→            <motion.div key="favorites" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+   535→  1564→              {renderFavorites()}
+   536→  1565→            </motion.div>
+   537→  1566→          )}
+   538→  1567→
+   539→  1568→          {view === 'messages' && (
+   540→  1569→            <motion.div key="messages" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+   541→  1570→              {renderMessages()}
+   542→  1571→            </motion.div>
+   543→  1572→          )}
+   544→  1573→
+   545→  1574→          {view === 'publish' && (
+   546→  1575→            <motion.div key="publish" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+   547→  1576→              {renderPublish()}
+   548→  1577→            </motion.div>
+   549→  1578→          )}
+   550→  1579→
+   551→  1580→          {view === 'dashboard' && (
+   552→  1581→            <motion.div key="dashboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+   553→  1582→              {renderDashboard()}
+   554→  1583→            </motion.div>
+   555→  1584→          )}
+   556→  1585→
+   557→  1586→          {view === 'admin' && (
+   558→  1587→            <motion.div key="admin" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+   559→  1588→              {renderAdmin()}
+   560→  1589→            </motion.div>
+   561→  1590→          )}
+   562→  1591→
+   563→  1592→          {view === 'compare' && (
+   564→  1593→            <motion.div key="compare" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+   565→  1594→              {renderCompare()}
+   566→  1595→            </motion.div>
+   567→  1596→          )}
+   568→  1597→
+   569→  1598→          {view === 'map' && (
+   570→  1599→            <motion.div key="map" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+   571→  1600→              <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+   572→  1601→                <div className="flex items-center gap-3 mb-6">
+   573→  1602→                  <MapIcon className="w-7 h-7 text-primary" />
+   574→  1603→                  <h1 className="text-2xl font-bold">{lang === 'fr' ? 'Vue carte' : 'Kaart'}</h1>
+   575→  1604→                  <Badge variant="secondary">{properties.filter(p => p.lat && p.lng).length} biens géolocalisés</Badge>
+   576→  1605→                </div>
+   577→  1606→                <div className="rounded-xl overflow-hidden border border-border shadow-lg" style={{ height: 'calc(100vh - 200px)' }}>
+   578→  1607→                  <MapView properties={properties} lang={lang} onPropertyClick={openProperty} />
+   579→  1608→                </div>
+   580→  1609→              </div>
+   581→  1610→            </motion.div>
+   582→  1611→          )}
+   583→  1612→        </AnimatePresence>
+   584→  1613→      </main>
+   585→  1614→
+   586→  1615→      {renderFooter()}
+   587→  1616→      {renderPropertyDetail()}
+   588→  1617→      {renderChatbot()}
+   589→  1618→
+   590→  1619→      {/* Payment Modal */}
+   591→  1620→      {paymentProperty && (
+   592→  1621→        <PaymentModal
+   593→  1622→          property={paymentProperty}
+   594→  1623→          lang={lang}
+   595→  1624→          open={true}
+   596→  1625→          onClose={() => setPaymentProperty(null)}
+   597→  1626→          type={paymentType}
+   598→  1627→        />
+   599→  1628→      )}
+   600→  1629→
+   601→  1630→      {/* Auth Modal */}
+   602→  1631→      <AuthModal
+   603→  1632→        open={showAuth}
+   604→  1633→        onClose={() => setShowAuth(false)}
+   605→  1634→        lang={lang}
+   606→  1635→        onLogin={setCurrentUser}
+   607→  1636→      />
+   608→  1637→
+   609→  1638→      {/* Alert Panel */}
+   610→  1639→      {showAlertPanel && (
+   611→  1640→        <motion.div
+   612→  1641→          initial={{ opacity: 0, x: 20 }}
+   613→  1642→          animate={{ opacity: 1, x: 0 }}
+   614→  1643→          exit={{ opacity: 0, x: 20 }}
+   615→  1644→          className="fixed top-20 right-4 z-50 w-80 bg-card border border-border rounded-xl shadow-2xl p-4"
+   616→  1645→        >
+   617→  1646→          <div className="flex items-center justify-between mb-3">
+   618→  1647→            <h3 className="font-semibold flex items-center gap-2"><Bell className="w-4 h-4" /> {lang === 'fr' ? 'Alertes immobilier' : 'Alart immobiliér'}</h3>
+   619→  1648→            <button onClick={() => setShowAlertPanel(false)}><X className="w-4 h-4" /></button>
+   620→  1649→          </div>
+   621→  1650→          <div className="space-y-3">
+   622→  1651→            {currentUser ? (
+   623→  1652→              <>
+   624→  1653→                <div className="grid grid-cols-2 gap-2">
+   625→  1654→                  <Select value={newAlert.type} onValueChange={(v) => setNewAlert({ ...newAlert, type: v })}>
+   626→  1655→                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+   627→  1656→                    <SelectContent>
+   628→  1657→                      <SelectItem value="all">Tous types</SelectItem>
+   629→  1658→                      <SelectItem value="maison">Maisons</SelectItem>
+   630→  1659→                      <SelectItem value="appartement">Apparts</SelectItem>
+   631→  1660→                      <SelectItem value="terrain">Terrains</SelectItem>
+   632→  1661→                      <SelectItem value="plan">Plans</SelectItem>
+   633→  1662→                    </SelectContent>
+   634→  1663→                  </Select>
+   635→  1664→                  <Select value={newAlert.region} onValueChange={(v) => setNewAlert({ ...newAlert, region: v })}>
+   636→  1665→                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+   637→  1666→                    <SelectContent>
+   638→  1667→                      {REGIONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+   639→  1668→                    </SelectContent>
+   640→  1669→                  </Select>
+   641→  1670→                </div>
+   642→  1671→                <Input type="number" placeholder="Budget max (FCFA)" className="h-8 text-xs" value={newAlert.maxPrice} onChange={(e) => setNewAlert({ ...newAlert, maxPrice: e.target.value })} />
+   643→  1672→                <Button size="sm" className="w-full h-8 text-xs" disabled={alertCreating} onClick={async () => {
+   644→  1673→                  setAlertCreating(true);
+   645→  1674→                  try {
+   646→  1675→                    await fetch('/api/alerts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create', ...newAlert }) });
+   647→  1676→                  } catch {}
+   648→  1677→                  setAlertCreating(false);
+   649→  1678→                }}>
+   650→  1679→                  <Bell className="w-3 h-3 mr-1" /> {lang === 'fr' ? 'Créer l\'alerte' : 'Sos alart bi'}
+   651→  1680→                </Button>
+   652→  1681→                <div className="text-xs text-muted-foreground">{lang === 'fr' ? 'Vous recevrez une notification pour chaque nouveau bien correspondant à vos critères.' : 'Dangay jott ndax sax biir bu nocci seen kaalaan.'}</div>
+   653→  1682→              </>
+   654→  1683→            ) : (
+   655→  1684→              <p className="text-sm text-muted-foreground text-center py-4">
+   656→  1685→                {lang === 'fr' ? 'Connectez-vous pour créer des alertes' : 'Seet ngir sos alart'}
+   657→  1686→              </p>
+   658→  1687→            )}
+   659→  1688→          </div>
+   660→  1689→        </motion.div>
+   661→  1690→      )}
+   662→  1691→
+   663→  1692→      {/* Offline indicator */}
+   664→  1693→      {isOffline && (
+   665→  1694→        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-amber-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg flex items-center gap-2">
+   666→  1695→          <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+   667→  1696→          Mode hors ligne
+   668→  1697→        </div>
+   669→  1698→      )}
+   670→  1699→
+   671→  1700→      {/* Compare banner */}
+   672→  1701→      {compareIds.length >= 2 && view !== 'compare' && (
+   673→  1702→        <motion.div
+   674→  1703→          initial={{ y: 100 }}
+   675→  1704→          animate={{ y: 0 }}
+   676→  1705→          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-card border border-border rounded-2xl shadow-2xl px-6 py-3 flex items-center gap-4"
+   677→  1706→        >
+   678→  1707→          <span className="text-sm font-medium">{compareIds.length} biens sélectionnés</span>
+   679→  1708→          <Button size="sm" onClick={() => setView('compare')} className="gap-1">
+   680→  1709→            <ArrowUpDown className="w-4 h-4" /> {t('nav.compare', lang)}
+   681→  1710→          </Button>
+   682→  1711→          <Button size="sm" variant="ghost" onClick={() => setCompareIds([])}>
+   683→  1712→            <X className="w-4 h-4" />
+   684→  1713→          </Button>
+   685→  1714→        </motion.div>
+   686→  1715→      )}
+   687→  1716→    </div>
+   688→  1717→  );
+   689→  1718→}
+   690→  1719→
+   691→  1720→export default function SadekhPage() {
+   692→  1721→  return (
+   693→  1722→    <QueryClientProvider client={queryClient}>
+   694→  1723→      <SadekhApp />
+   695→  1724→    </QueryClientProvider>
+   696→  1725→  );
+   697→  1726→}

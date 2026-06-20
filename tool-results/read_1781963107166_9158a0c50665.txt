@@ -1,0 +1,697 @@
+  1030→
+  1031→        <Card className="p-6">
+  1032→          {step === 1 && (
+  1033→            <div className="space-y-6">
+  1034→              <h3 className="text-lg font-semibold">{t('publish.step1', lang)}</h3>
+  1035→              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+  1036→                {['maison', 'appartement', 'terrain', 'plan'].map((type) => (
+  1037→                  <button
+  1038→                    key={type}
+  1039→                    onClick={() => setPublishForm({ ...form, type })}
+  1040→                    className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${
+  1041→                      form.type === type ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+  1042→                    }`}
+  1043→                  >
+  1044→                    {TYPE_ICONS[type]}
+  1045→                    <span className="text-sm font-medium">{t(`filter.${type}`, lang)}</span>
+  1046→                  </button>
+  1047→                ))}
+  1048→              </div>
+  1049→            </div>
+  1050→          )}
+  1051→
+  1052→          {step === 2 && (
+  1053→            <div className="space-y-4">
+  1054→              <h3 className="text-lg font-semibold">{t('publish.step2', lang)}</h3>
+  1055→              <div>
+  1056→                <Label>{t('publish.title.label', lang)}</Label>
+  1057→                <Input className="mt-1" value={form.title} onChange={(e) => setPublishForm({ ...form, title: e.target.value })} placeholder="Villa 4 chambres — Almadies" />
+  1058→              </div>
+  1059→              <div>
+  1060→                <Label>{t('publish.description.label', lang)}</Label>
+  1061→                <Textarea className="mt-1" rows={4} value={form.description} onChange={(e) => setPublishForm({ ...form, description: e.target.value })} placeholder="Décrivez votre bien..." />
+  1062→                <Button variant="ghost" size="sm" className="mt-1 gap-1 text-primary">
+  1063→                  <Sparkles className="w-3.5 h-3.5" /> {t('publish.ai.desc', lang)}
+  1064→                </Button>
+  1065→              </div>
+  1066→              <div className="grid grid-cols-2 gap-4">
+  1067→                <div>
+  1068→                  <Label>{t('publish.price.label', lang)}</Label>
+  1069→                  <Input type="number" className="mt-1" value={form.price} onChange={(e) => setPublishForm({ ...form, price: e.target.value })} placeholder="75000000" />
+  1070→                </div>
+  1071→                <div>
+  1072→                  <Label>{t('publish.surface.label', lang)}</Label>
+  1073→                  <Input type="number" className="mt-1" value={form.surfaceM2} onChange={(e) => setPublishForm({ ...form, surfaceM2: e.target.value })} placeholder="200" />
+  1074→                </div>
+  1075→              </div>
+  1076→              <div>
+  1077→                <Label>{t('publish.rooms.label', lang)}</Label>
+  1078→                <Input type="number" className="mt-1" value={form.rooms} onChange={(e) => setPublishForm({ ...form, rooms: e.target.value })} placeholder="4" />
+  1079→              </div>
+  1080→              <div className="flex gap-4">
+  1081→                <label className="flex items-center gap-2 cursor-pointer">
+  1082→                  <Checkbox checked={form.priceNegotiable} onCheckedChange={(v) => setPublishForm({ ...form, priceNegotiable: !!v })} />
+  1083→                  <span className="text-sm">{t('publish.negotiable', lang)}</span>
+  1084→                </label>
+  1085→                <label className="flex items-center gap-2 cursor-pointer">
+  1086→                  <Checkbox checked={form.titleFoncier} onCheckedChange={(v) => setPublishForm({ ...form, titleFoncier: !!v })} />
+  1087→                  <span className="text-sm">{t('publish.foncier', lang)}</span>
+  1088→                </label>
+  1089→              </div>
+  1090→            </div>
+  1091→          )}
+  1092→
+  1093→          {step === 3 && (
+  1094→            <div className="space-y-4">
+  1095→              <h3 className="text-lg font-semibold">{t('publish.step3', lang)}</h3>
+  1096→              <div className="border-2 border-dashed border-border rounded-xl p-12 text-center">
+  1097→                <ImageIcon className="w-12 h-12 mx-auto text-muted-foreground/40 mb-3" />
+  1098→                <p className="text-muted-foreground mb-2">{t('publish.photos', lang)}</p>
+  1099→                <Button variant="outline" size="sm">Choisir des fichiers</Button>
+  1100→                <p className="text-xs text-muted-foreground mt-2">JPG, PNG, WebP. Max 5MB par photo.</p>
+  1101→              </div>
+  1102→            </div>
+  1103→          )}
+  1104→
+  1105→          {step === 4 && (
+  1106→            <div className="space-y-4">
+  1107→              <h3 className="text-lg font-semibold">{t('publish.step4', lang)}</h3>
+  1108→              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+  1109→                <div>
+  1110→                  <Label>{t('publish.region.label', lang)}</Label>
+  1111→                  <Select value={form.region} onValueChange={(v) => setPublishForm({ ...form, region: v })}>
+  1112→                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+  1113→                    <SelectContent>{REGIONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+  1114→                  </Select>
+  1115→                </div>
+  1116→                <div>
+  1117→                  <Label>{t('publish.city.label', lang)}</Label>
+  1118→                  <Input className="mt-1" value={form.city} onChange={(e) => setPublishForm({ ...form, city: e.target.value })} placeholder="Dakar" />
+  1119→                </div>
+  1120→                <div>
+  1121→                  <Label>{t('publish.quartier.label', lang)}</Label>
+  1122→                  <Input className="mt-1" value={form.quartier} onChange={(e) => setPublishForm({ ...form, quartier: e.target.value })} placeholder="Almadies" />
+  1123→                </div>
+  1124→              </div>
+  1125→            </div>
+  1126→          )}
+  1127→
+  1128→          {/* Navigation */}
+  1129→          <div className="flex justify-between mt-8">
+  1130→            <Button variant="outline" onClick={() => step > 1 ? setPublishStep(step - 1) : setView('home')}>
+  1131→              {step > 1 ? <ChevronLeft className="w-4 h-4 mr-1" /> : null}
+  1132→              {step > 1 ? '' : t('common.cancel', lang)}
+  1133→            </Button>
+  1134→            {step < 4 ? (
+  1135→              <Button onClick={() => setPublishStep(step + 1)}>
+  1136→                {t('common.save', lang)} <ChevronRight className="w-4 h-4 ml-1" />
+  1137→              </Button>
+  1138→            ) : (
+  1139→              <Button onClick={handleSubmit} disabled={publishing} className="gap-2">
+  1140→                <Zap className="w-4 h-4" />
+  1141→                {t('publish.submit', lang)}
+  1142→              </Button>
+  1143→            )}
+  1144→          </div>
+  1145→        </Card>
+  1146→      </div>
+  1147→    );
+  1148→  };
+  1149→
+  1150→  /* ─── DASHBOARD VIEW ─── */
+  1151→  const renderDashboard = () => (
+  1152→    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+  1153→      <div className="flex items-center gap-3 mb-6">
+  1154→        <BarChart3 className="w-7 h-7 text-primary" />
+  1155→        <h1 className="text-2xl font-bold">{t('dashboard.title', lang)}</h1>
+  1156→      </div>
+  1157→
+  1158→      {/* Stats cards */}
+  1159→      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+  1160→        {[
+  1161→          { label: t('dashboard.activeProperties', lang), value: stats?.activeProperties || 16, icon: <Building className="w-5 h-5" />, color: 'text-green-600 bg-green-100 dark:bg-green-900/30' },
+  1162→          { label: t('dashboard.totalViews', lang), value: stats?.totalViews || 0, icon: <Eye className="w-5 h-5" />, color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30' },
+  1163→          { label: t('dashboard.totalContacts', lang), value: stats?.totalMessages || 4, icon: <MessageCircle className="w-5 h-5" />, color: 'text-purple-600 bg-purple-100 dark:bg-purple-900/30' },
+  1164→          { label: t('dashboard.payments', lang), value: stats?.premiumProperties || 0, icon: <HandCoins className="w-5 h-5" />, color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30' },
+  1165→        ].map((stat) => (
+  1166→          <Card key={stat.label} className="p-4">
+  1167→            <div className="flex items-center justify-between mb-3">
+  1168→              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${stat.color}`}>{stat.icon}</div>
+  1169→            </div>
+  1170→            <div className="text-2xl font-bold">{stat.value}</div>
+  1171→            <div className="text-sm text-muted-foreground">{stat.label}</div>
+  1172→          </Card>
+  1173→        ))}
+  1174→      </div>
+  1175→
+  1176→      {/* My properties */}
+  1177→      <div className="mb-8">
+  1178→        <div className="flex items-center justify-between mb-4">
+  1179→          <h2 className="text-lg font-semibold">{t('dashboard.myProperties', lang)}</h2>
+  1180→          <Button size="sm" onClick={() => setView('publish')} className="gap-1"><Plus className="w-4 h-4" /> {t('nav.publish', lang)}</Button>
+  1181→        </div>
+  1182→        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  1183→          {properties.slice(0, 6).map(renderPropertyCard)}
+  1184→        </div>
+  1185→      </div>
+  1186→
+  1187→      {/* Recent messages */}
+  1188→      <Card className="p-4">
+  1189→        <h2 className="text-lg font-semibold mb-4">{t('dashboard.recentMessages', lang)}</h2>
+  1190→        <div className="space-y-3">
+  1191→          {(messages || []).slice(0, 5).map((m: Message) => (
+  1192→            <div key={m.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+  1193→              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+  1194→                {(m.sender?.profile?.fullName || m.sender?.name || '?')[0]}
+  1195→              </div>
+  1196→              <div className="flex-1 min-w-0">
+  1197→                <div className="text-sm font-medium">{m.sender?.profile?.fullName || m.sender?.name}</div>
+  1198→                <div className="text-xs text-muted-foreground truncate">{m.content}</div>
+  1199→              </div>
+  1200→              <div className="text-xs text-muted-foreground shrink-0">{new Date(m.createdAt).toLocaleDateString('fr-FR')}</div>
+  1201→            </div>
+  1202→          ))}
+  1203→        </div>
+  1204→      </Card>
+  1205→    </div>
+  1206→  );
+  1207→
+  1208→  /* ─── ADMIN VIEW ─── */
+  1209→  const renderAdmin = () => (
+  1210→    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+  1211→      <div className="flex items-center gap-3 mb-6">
+  1212→        <Shield className="w-7 h-7 text-primary" />
+  1213→        <h1 className="text-2xl font-bold">{t('admin.title', lang)}</h1>
+  1214→      </div>
+  1215→
+  1216→      {/* Admin stats */}
+  1217→      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+  1218→        {[
+  1219→          { label: t('admin.users', lang), value: stats?.totalUsers || 6, icon: <Users className="w-5 h-5" /> },
+  1220→          { label: t('hero.stats.properties', lang), value: stats?.totalProperties || 16, icon: <Building className="w-5 h-5" /> },
+  1221→          { label: t('admin.reports', lang), value: 0, icon: <AlertTriangle className="w-5 h-5" /> },
+  1222→          { label: t('admin.revenue', lang), value: `${((stats?.premiumProperties || 0) * 5000).toLocaleString()} F`, icon: <TrendingUp className="w-5 h-5" /> },
+  1223→        ].map((stat) => (
+  1224→          <Card key={stat.label} className="p-4">
+  1225→            <div className="flex items-center gap-2 mb-2 text-muted-foreground">{stat.icon} {stat.label}</div>
+  1226→            <div className="text-2xl font-bold">{stat.value}</div>
+  1227→          </Card>
+  1228→        ))}
+  1229→      </div>
+  1230→
+  1231→      {/* Properties by type */}
+  1232→      {stats?.propertiesByType && (
+  1233→        <Card className="p-6 mb-8">
+  1234→          <h2 className="text-lg font-semibold mb-4">{t('dashboard.stats', lang)}</h2>
+  1235→          <div className="space-y-3">
+  1236→            {stats.propertiesByType.map((item: any) => (
+  1237→              <div key={item.type} className="flex items-center gap-4">
+  1238→                <div className="flex items-center gap-2 w-32">
+  1239→                  {TYPE_ICONS[item.type]}
+  1240→                  <span className="text-sm font-medium">{t(`filter.${item.type}`, lang)}</span>
+  1241→                </div>
+  1242→                <div className="flex-1 bg-muted rounded-full h-3 overflow-hidden">
+  1243→                  <motion.div
+  1244→                    initial={{ width: 0 }}
+  1245→                    animate={{ width: `${(item._count.id / (stats.totalProperties || 1)) * 100}%` }}
+  1246→                    transition={{ duration: 0.8, ease: 'easeOut' }}
+  1247→                    className="h-full bg-primary rounded-full"
+  1248→                  />
+  1249→                </div>
+  1250→                <span className="text-sm font-bold w-8 text-right">{item._count.id}</span>
+  1251→              </div>
+  1252→            ))}
+  1253→          </div>
+  1254→        </Card>
+  1255→      )}
+  1256→
+  1257→      {/* Top properties */}
+  1258→      <Card className="p-6">
+  1259→        <h2 className="text-lg font-semibold mb-4">Top annonces</h2>
+  1260→        <div className="space-y-3">
+  1261→          {(stats?.recentProperties || []).map((p: any, i: number) => (
+  1262→            <div key={p.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+  1263→              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">{i + 1}</div>
+  1264→              <div className="flex-1 min-w-0">
+  1265→                <div className="font-medium text-sm truncate">{p.title}</div>
+  1266→                <div className="text-xs text-muted-foreground">{t(`filter.${p.type}`, lang)} · {formatPrice(p.price, lang)}</div>
+  1267→              </div>
+  1268→              <div className="text-sm text-muted-foreground flex items-center gap-1">
+  1269→                <Eye className="w-3.5 h-3.5" /> {p.viewsCount}
+  1270→              </div>
+  1271→            </div>
+  1272→          ))}
+  1273→        </div>
+  1274→      </Card>
+  1275→    </div>
+  1276→  );
+  1277→
+  1278→  /* ─── COMPARE VIEW ─── */
+  1279→  const renderCompare = () => {
+  1280→    const compareProperties = properties.filter((p) => compareIds.includes(p.id));
+  1281→    if (compareIds.length < 2) {
+  1282→      return (
+  1283→        <div className="max-w-3xl mx-auto px-4 py-20 text-center">
+  1284→          <ArrowUpDown className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
+  1285→          <h2 className="text-2xl font-bold mb-2">{t('compare.title', lang)}</h2>
+  1286→          <p className="text-muted-foreground">{t('compare.empty', lang)}</p>
+  1287→        </div>
+  1288→      );
+  1289→    }
+  1290→    return (
+  1291→      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+  1292→        <h1 className="text-2xl font-bold mb-6">{t('compare.title', lang)}</h1>
+  1293→        <div className="overflow-x-auto">
+  1294→          <table className="w-full">
+  1295→            <thead>
+  1296→              <tr>
+  1297→                <th className="p-3 text-left w-40" />
+  1298→                {compareProperties.map((p) => (
+  1299→                  <th key={p.id} className="p-3 text-left min-w-[250px]">
+  1300→                    <img src={p.images[0]} alt="" className="w-full h-40 object-cover rounded-lg mb-2" />
+  1301→                    <div className="font-semibold">{p.title}</div>
+  1302→                  </th>
+  1303→                ))}
+  1304→              </tr>
+  1305→            </thead>
+  1306→            <tbody>
+  1307→              {[
+  1308→                { label: 'Prix', render: (p: Property) => formatPrice(p.price, lang) },
+  1309→                { label: 'Type', render: (p: Property) => t(`filter.${p.type}`, lang) },
+  1310→                { label: 'Surface', render: (p: Property) => p.surfaceM2 ? `${p.surfaceM2} m²` : '—' },
+  1311→                { label: 'Pièces', render: (p: Property) => p.rooms || '—' },
+  1312→                { label: 'Région', render: (p: Property) => p.region },
+  1313→                { label: 'Quartier', render: (p: Property) => p.quartier },
+  1314→                { label: 'Titre foncier', render: (p: Property) => p.titleFoncier ? <Check className="w-5 h-5 text-green-600" /> : <X className="w-5 h-5 text-red-400" /> },
+  1315→                { label: 'Négociable', render: (p: Property) => p.priceNegotiable ? <Check className="w-5 h-5 text-green-600" /> : <X className="w-5 h-5 text-red-400" /> },
+  1316→                { label: 'Vues', render: (p: Property) => p.viewsCount },
+  1317→                { label: 'Premium', render: (p: Property) => p.isPremium ? <Crown className="w-5 h-5 text-amber-500" /> : <X className="w-5 h-5 text-muted-foreground" /> },
+  1318→              ].map((row) => (
+  1319→                <tr key={row.label} className="border-t border-border">
+  1320→                  <td className="p-3 font-medium text-sm text-muted-foreground">{row.label}</td>
+  1321→                  {compareProperties.map((p) => (
+  1322→                    <td key={p.id} className="p-3 text-sm">{row.render(p)}</td>
+  1323→                  ))}
+  1324→                </tr>
+  1325→              ))}
+  1326→            </tbody>
+  1327→          </table>
+  1328→        </div>
+  1329→      </div>
+  1330→    );
+  1331→  };
+  1332→
+  1333→  /* ─── CHATBOT ─── */
+  1334→  const renderChatbot = () => (
+  1335→    <div className="fixed bottom-6 right-6 z-50">
+  1336→      <AnimatePresence>
+  1337→        {showChatbot && (
+  1338→          <motion.div
+  1339→            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+  1340→            animate={{ opacity: 1, y: 0, scale: 1 }}
+  1341→            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+  1342→            className="mb-3 w-[360px] max-h-[500px] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+  1343→          >
+  1344→            <div className="bg-primary text-primary-foreground p-4 flex items-center gap-3">
+  1345→              <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
+  1346→                <Bot className="w-5 h-5" />
+  1347→              </div>
+  1348→              <div>
+  1349→                <div className="font-semibold">{t('chatbot.title', lang)}</div>
+  1350→                <div className="text-xs text-primary-foreground/70">Claude Sonnet 4</div>
+  1351→              </div>
+  1352→              <button onClick={() => setShowChatbot(false)} className="ml-auto w-8 h-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30">
+  1353→                <X className="w-4 h-4" />
+  1354→              </button>
+  1355→            </div>
+  1356→            <ScrollArea className="flex-1 p-4 max-h-[350px]">
+  1357→              {chatMessages.map((msg, i) => (
+  1358→                <div key={i} className={`flex mb-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+  1359→                  <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm ${
+  1360→                    msg.role === 'user'
+  1361→                      ? 'bg-primary text-primary-foreground rounded-br-md'
+  1362→                      : 'bg-muted rounded-bl-md'
+  1363→                  }`}>
+  1364→                    {t(msg.content, lang)}
+  1365→                  </div>
+  1366→                </div>
+  1367→              ))}
+  1368→            </ScrollArea>
+  1369→            <div className="p-3 border-t border-border flex gap-2">
+  1370→              <Input
+  1371→                placeholder={t('chatbot.placeholder', lang)}
+  1372→                className="flex-1 h-9 text-sm"
+  1373→                onKeyDown={(e) => {
+  1374→                  if (e.key === 'Enter' && (e.target as HTMLInputElement).value.trim()) {
+  1375→                    setChatMessages((prev) => [...prev, { role: 'user', content: (e.target as HTMLInputElement).value }]);
+  1376→                    (e.target as HTMLInputElement).value = '';
+  1377→                    setTimeout(() => {
+  1378→                      setChatMessages((prev) => [...prev, {
+  1379→                        role: 'assistant',
+  1380→                        content: 'Je peux vous aider à trouver le bien parfait ! Essayez nos filtres pour affiner votre recherche.',
+  1381→                      }]);
+  1382→                    }, 1000);
+  1383→                  }
+  1384→                }}
+  1385→              />
+  1386→              <Button size="icon" className="h-9 w-9"><Send className="w-4 h-4" /></Button>
+  1387→            </div>
+  1388→          </motion.div>
+  1389→        )}
+  1390→      </AnimatePresence>
+  1391→      <motion.button
+  1392→        whileHover={{ scale: 1.1 }}
+  1393→        whileTap={{ scale: 0.9 }}
+  1394→        onClick={() => setShowChatbot(!showChatbot)}
+  1395→        className="w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-xl flex items-center justify-center hover:bg-primary/90 transition-colors"
+  1396→      >
+  1397→        {showChatbot ? <X className="w-6 h-6" /> : <Bot className="w-6 h-6" />}
+  1398→      </motion.button>
+  1399→    </div>
+  1400→  );
+  1401→
+  1402→  /* ─── FOOTER ─── */
+  1403→  const renderFooter = () => (
+  1404→    <footer className="bg-card border-t border-border mt-auto">
+  1405→      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
+  1406→        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+  1407→          {/* About */}
+  1408→          <div className="md:col-span-2">
+  1409→            <div className="flex items-center gap-2 mb-4">
+  1410→              <img src="/logo-sadekh.png" alt="SADEKH BTP" className="h-8 w-8 rounded-full" />
+  1411→              <span className="font-bold text-lg">SADEKH <span className="text-amber-600">BTP</span></span>
+  1412→            </div>
+  1413→            <p className="text-muted-foreground text-sm leading-relaxed max-w-md">
+  1414→              {t('footer.about.desc', lang)}
+  1415→            </p>
+  1416→            <div className="flex gap-3 mt-4">
+  1417→              {['Wave', 'Orange Money'].map((m) => (
+  1418→                <Badge key={m} variant="outline" className="text-xs">{m}</Badge>
+  1419→              ))}
+  1420→            </div>
+  1421→          </div>
+  1422→
+  1423→          {/* Quick links */}
+  1424→          <div>
+  1425→            <h3 className="font-semibold mb-4">{t('footer.links', lang)}</h3>
+  1426→            <div className="space-y-2">
+  1427→              {['maison', 'appartement', 'terrain', 'plan'].map((type) => (
+  1428→                <button key={type} onClick={() => { updateFilter('type', type); setView('listing'); }} className="block text-sm text-muted-foreground hover:text-foreground transition-colors">
+  1429→                  {t(`filter.${type}`, lang)}
+  1430→                </button>
+  1431→              ))}
+  1432→            </div>
+  1433→          </div>
+  1434→
+  1435→          {/* Contact */}
+  1436→          <div>
+  1437→            <h3 className="font-semibold mb-4">{t('footer.contact', lang)}</h3>
+  1438→            <div className="space-y-2 text-sm text-muted-foreground">
+  1439→              <p>Dakar, Sénégal</p>
+  1440→              <p>contact@sadekhbtp.sn</p>
+  1441→              <p>+221 77 123 45 67</p>
+  1442→            </div>
+  1443→          </div>
+  1444→        </div>
+  1445→
+  1446→        <Separator className="my-8" />
+  1447→
+  1448→        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
+  1449→          <p>© {new Date().getFullYear()} SADEKH BTP. {t('footer.rights', lang)}</p>
+  1450→          <div className="flex gap-4">
+  1451→            <button className="hover:text-foreground transition-colors">{t('footer.legal', lang)}</button>
+  1452→            <button className="hover:text-foreground transition-colors">{t('footer.privacy', lang)}</button>
+  1453→            <button className="hover:text-foreground transition-colors">{t('footer.terms', lang)}</button>
+  1454→          </div>
+  1455→        </div>
+  1456→      </div>
+  1457→    </footer>
+  1458→  );
+  1459→
+  1460→  /* ─── MAIN RENDER ─── */
+  1461→  return (
+  1462→    <div className="min-h-screen flex flex-col">
+  1463→      {renderHeader()}
+  1464→
+  1465→      <main className="flex-1">
+  1466→        <AnimatePresence mode="wait">
+  1467→          {view === 'home' && (
+  1468→            <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+  1469→              {renderHero()}
+  1470→              {/* Featured properties */}
+  1471→              <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
+  1472→                <div className="flex items-center justify-between mb-6">
+  1473→                  <div>
+  1474→                    <h2 className="text-2xl font-bold">Annonces Premium</h2>
+  1475→                    <p className="text-muted-foreground text-sm mt-1">Biens vérifiés et mis en avant par nos agents certifiés</p>
+  1476→                  </div>
+  1477→                  <Button variant="outline" onClick={() => setView('listing')} className="gap-1">
+  1478→                    {t('common.seeAll', lang)} <ChevronRight className="w-4 h-4" />
+  1479→                  </Button>
+  1480→                </div>
+  1481→                {loadingProperties ? (
+  1482→                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+  1483→                    {Array.from({ length: 3 }).map((_, i) => (
+  1484→                      <Card key={i} className="overflow-hidden"><Skeleton className="aspect-[4/3]" /><CardContent className="p-4 space-y-3"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-1/2" /></CardContent></Card>
+  1485→                    ))}
+  1486→                  </div>
+  1487→                ) : (
+  1488→                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+  1489→                    {properties.filter((p) => p.isPremium).slice(0, 3).map(renderPropertyCard)}
+  1490→                  </div>
+  1491→                )}
+  1492→              </section>
+  1493→
+  1494→              {/* Recent properties */}
+  1495→              <section className="bg-muted/50 py-12">
+  1496→                <div className="max-w-7xl mx-auto px-4 sm:px-6">
+  1497→                  <div className="flex items-center justify-between mb-6">
+  1498→                    <div>
+  1499→                      <h2 className="text-2xl font-bold">Dernières annonces</h2>
+  1500→                      <p className="text-muted-foreground text-sm mt-1">Découvrez les biens récemment publiés</p>
+  1501→                    </div>
+  1502→                    <Button variant="outline" onClick={() => { updateFilter('sort', 'recent'); setView('listing'); }} className="gap-1">
+  1503→                      {t('common.seeAll', lang)} <ChevronRight className="w-4 h-4" />
+  1504→                    </Button>
+  1505→                  </div>
+  1506→                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+  1507→                    {properties.slice(0, 8).map(renderPropertyCard)}
+  1508→                  </div>
+  1509→                </div>
+  1510→              </section>
+  1511→
+  1512→              {/* How it works */}
+  1513→              <section className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
+  1514→                <h2 className="text-2xl font-bold text-center mb-10">Comment ça marche ?</h2>
+  1515→                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+  1516→                  {[
+  1517→                    { icon: <Search className="w-7 h-7" />, title: 'Recherchez', desc: 'Parcourez des centaines de maisons, appartements et terrains au Sénégal' },
+  1518→                    { icon: <Heart className="w-7 h-7" />, title: 'Sauvegardez', desc: 'Ajoutez vos biens préférés aux favoris et créez des alertes' },
+  1519→                    { icon: <MessageCircle className="w-7 h-7" />, title: 'Contactez', desc: 'Discutez directement avec les vendeurs via WhatsApp ou messagerie' },
+  1520→                    { icon: <Check className="w-7 h-7" />, title: 'Conclusion', desc: 'Finalisez votre achat en toute sécurité avec les paiements mobiles' },
+  1521→                  ].map((step, i) => (
+  1522→                    <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.15 }}>
+  1523→                      <Card className="p-6 text-center h-full">
+  1524→                        <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center text-primary mx-auto mb-4">
+  1525→                          {step.icon}
+  1526→                        </div>
+  1527→                        <h3 className="font-bold text-lg mb-2">{step.title}</h3>
+  1528→                        <p className="text-sm text-muted-foreground">{step.desc}</p>
+  1529→                      </Card>
+  1530→                    </motion.div>
+  1531→                  ))}
+  1532→                </div>
+  1533→              </section>
+  1534→
+  1535→              {/* Regions */}
+  1536→              <section className="bg-muted/50 py-12">
+  1537→                <div className="max-w-7xl mx-auto px-4 sm:px-6">
+  1538→                  <h2 className="text-2xl font-bold text-center mb-8">Explorez par région</h2>
+  1539→                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+  1540→                    {REGIONS.slice(0, 6).map((region) => (
+  1541→                      <button
+  1542→                        key={region}
+  1543→                        onClick={() => { updateFilter('region', region); setView('listing'); }}
+  1544→                        className="p-4 bg-card rounded-xl border border-border hover:border-primary hover:shadow-md transition-all text-center"
+  1545→                      >
+  1546→                        <MapPinIcon className="w-6 h-6 mx-auto text-primary mb-2" />
+  1547→                        <span className="font-medium text-sm">{region}</span>
+  1548→                      </button>
+  1549→                    ))}
+  1550→                  </div>
+  1551→                </div>
+  1552→              </section>
+  1553→            </motion.div>
+  1554→          )}
+  1555→
+  1556→          {view === 'listing' && (
+  1557→            <motion.div key="listing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+  1558→              {renderListing()}
+  1559→            </motion.div>
+  1560→          )}
+  1561→
+  1562→          {view === 'favorites' && (
+  1563→            <motion.div key="favorites" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+  1564→              {renderFavorites()}
+  1565→            </motion.div>
+  1566→          )}
+  1567→
+  1568→          {view === 'messages' && (
+  1569→            <motion.div key="messages" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+  1570→              {renderMessages()}
+  1571→            </motion.div>
+  1572→          )}
+  1573→
+  1574→          {view === 'publish' && (
+  1575→            <motion.div key="publish" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+  1576→              {renderPublish()}
+  1577→            </motion.div>
+  1578→          )}
+  1579→
+  1580→          {view === 'dashboard' && (
+  1581→            <motion.div key="dashboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+  1582→              {renderDashboard()}
+  1583→            </motion.div>
+  1584→          )}
+  1585→
+  1586→          {view === 'admin' && (
+  1587→            <motion.div key="admin" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+  1588→              {renderAdmin()}
+  1589→            </motion.div>
+  1590→          )}
+  1591→
+  1592→          {view === 'compare' && (
+  1593→            <motion.div key="compare" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+  1594→              {renderCompare()}
+  1595→            </motion.div>
+  1596→          )}
+  1597→
+  1598→          {view === 'map' && (
+  1599→            <motion.div key="map" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+  1600→              <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+  1601→                <div className="flex items-center gap-3 mb-6">
+  1602→                  <MapIcon className="w-7 h-7 text-primary" />
+  1603→                  <h1 className="text-2xl font-bold">{lang === 'fr' ? 'Vue carte' : 'Kaart'}</h1>
+  1604→                  <Badge variant="secondary">{properties.filter(p => p.lat && p.lng).length} biens géolocalisés</Badge>
+  1605→                </div>
+  1606→                <div className="rounded-xl overflow-hidden border border-border shadow-lg" style={{ height: 'calc(100vh - 200px)' }}>
+  1607→                  <MapView properties={properties} lang={lang} onPropertyClick={openProperty} />
+  1608→                </div>
+  1609→              </div>
+  1610→            </motion.div>
+  1611→          )}
+  1612→        </AnimatePresence>
+  1613→      </main>
+  1614→
+  1615→      {renderFooter()}
+  1616→      {renderPropertyDetail()}
+  1617→      {renderChatbot()}
+  1618→
+  1619→      {/* Payment Modal */}
+  1620→      {paymentProperty && (
+  1621→        <PaymentModal
+  1622→          property={paymentProperty}
+  1623→          lang={lang}
+  1624→          open={true}
+  1625→          onClose={() => setPaymentProperty(null)}
+  1626→          type={paymentType}
+  1627→        />
+  1628→      )}
+  1629→
+  1630→      {/* Auth Modal */}
+  1631→      <AuthModal
+  1632→        open={showAuth}
+  1633→        onClose={() => setShowAuth(false)}
+  1634→        lang={lang}
+  1635→        onLogin={setCurrentUser}
+  1636→      />
+  1637→
+  1638→      {/* Alert Panel */}
+  1639→      {showAlertPanel && (
+  1640→        <motion.div
+  1641→          initial={{ opacity: 0, x: 20 }}
+  1642→          animate={{ opacity: 1, x: 0 }}
+  1643→          exit={{ opacity: 0, x: 20 }}
+  1644→          className="fixed top-20 right-4 z-50 w-80 bg-card border border-border rounded-xl shadow-2xl p-4"
+  1645→        >
+  1646→          <div className="flex items-center justify-between mb-3">
+  1647→            <h3 className="font-semibold flex items-center gap-2"><Bell className="w-4 h-4" /> {lang === 'fr' ? 'Alertes immobilier' : 'Alart immobiliér'}</h3>
+  1648→            <button onClick={() => setShowAlertPanel(false)}><X className="w-4 h-4" /></button>
+  1649→          </div>
+  1650→          <div className="space-y-3">
+  1651→            {currentUser ? (
+  1652→              <>
+  1653→                <div className="grid grid-cols-2 gap-2">
+  1654→                  <Select value={newAlert.type} onValueChange={(v) => setNewAlert({ ...newAlert, type: v })}>
+  1655→                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+  1656→                    <SelectContent>
+  1657→                      <SelectItem value="all">Tous types</SelectItem>
+  1658→                      <SelectItem value="maison">Maisons</SelectItem>
+  1659→                      <SelectItem value="appartement">Apparts</SelectItem>
+  1660→                      <SelectItem value="terrain">Terrains</SelectItem>
+  1661→                      <SelectItem value="plan">Plans</SelectItem>
+  1662→                    </SelectContent>
+  1663→                  </Select>
+  1664→                  <Select value={newAlert.region} onValueChange={(v) => setNewAlert({ ...newAlert, region: v })}>
+  1665→                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+  1666→                    <SelectContent>
+  1667→                      {REGIONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+  1668→                    </SelectContent>
+  1669→                  </Select>
+  1670→                </div>
+  1671→                <Input type="number" placeholder="Budget max (FCFA)" className="h-8 text-xs" value={newAlert.maxPrice} onChange={(e) => setNewAlert({ ...newAlert, maxPrice: e.target.value })} />
+  1672→                <Button size="sm" className="w-full h-8 text-xs" disabled={alertCreating} onClick={async () => {
+  1673→                  setAlertCreating(true);
+  1674→                  try {
+  1675→                    await fetch('/api/alerts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create', ...newAlert }) });
+  1676→                  } catch {}
+  1677→                  setAlertCreating(false);
+  1678→                }}>
+  1679→                  <Bell className="w-3 h-3 mr-1" /> {lang === 'fr' ? 'Créer l\'alerte' : 'Sos alart bi'}
+  1680→                </Button>
+  1681→                <div className="text-xs text-muted-foreground">{lang === 'fr' ? 'Vous recevrez une notification pour chaque nouveau bien correspondant à vos critères.' : 'Dangay jott ndax sax biir bu nocci seen kaalaan.'}</div>
+  1682→              </>
+  1683→            ) : (
+  1684→              <p className="text-sm text-muted-foreground text-center py-4">
+  1685→                {lang === 'fr' ? 'Connectez-vous pour créer des alertes' : 'Seet ngir sos alart'}
+  1686→              </p>
+  1687→            )}
+  1688→          </div>
+  1689→        </motion.div>
+  1690→      )}
+  1691→
+  1692→      {/* Offline indicator */}
+  1693→      {isOffline && (
+  1694→        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-amber-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg flex items-center gap-2">
+  1695→          <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+  1696→          Mode hors ligne
+  1697→        </div>
+  1698→      )}
+  1699→
+  1700→      {/* Compare banner */}
+  1701→      {compareIds.length >= 2 && view !== 'compare' && (
+  1702→        <motion.div
+  1703→          initial={{ y: 100 }}
+  1704→          animate={{ y: 0 }}
+  1705→          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-card border border-border rounded-2xl shadow-2xl px-6 py-3 flex items-center gap-4"
+  1706→        >
+  1707→          <span className="text-sm font-medium">{compareIds.length} biens sélectionnés</span>
+  1708→          <Button size="sm" onClick={() => setView('compare')} className="gap-1">
+  1709→            <ArrowUpDown className="w-4 h-4" /> {t('nav.compare', lang)}
+  1710→          </Button>
+  1711→          <Button size="sm" variant="ghost" onClick={() => setCompareIds([])}>
+  1712→            <X className="w-4 h-4" />
+  1713→          </Button>
+  1714→        </motion.div>
+  1715→      )}
+  1716→    </div>
+  1717→  );
+  1718→}
+  1719→
+  1720→export default function SadekhPage() {
+  1721→  return (
+  1722→    <QueryClientProvider client={queryClient}>
+  1723→      <SadekhApp />
+  1724→    </QueryClientProvider>
+  1725→  );
+  1726→}

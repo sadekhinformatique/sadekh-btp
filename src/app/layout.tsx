@@ -14,6 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://sadekhbtp.sn"),
   title: "SADEKH BTP — Marketplace Immobilière Sénégalaise",
   description: "Maisons, appartements, terrains et plans architecturaux. La première marketplace immobilière pensée pour le marché sénégalais. Paiement mobile Wave & Orange Money.",
   keywords: "immobilier, Sénégal, Dakar, maison, appartement, terrain, plan architectural, Wave, Orange Money, SADEKH BTP, immobilier Sénégal, vente maison Dakar",

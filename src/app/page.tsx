@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { t, formatPrice, type Lang } from '@/lib/i18n';
@@ -10,6 +10,7 @@ import dynamic from 'next/dynamic';
 const MapView = dynamic(() => import("@/components/sadekh/MapView"), { ssr: false, loading: () => <div className="h-[500px] bg-muted animate-pulse rounded-xl flex items-center justify-center text-muted-foreground">Chargement de la carte...</div> });
 import PaymentModal from '@/components/sadekh/PaymentModal';
 import AuthModal from '@/components/sadekh/AuthModal';
+const GpsPicker = dynamic(() => import('@/components/sadekh/GpsPicker'), { ssr: false, loading: () => <div className="h-[350px] bg-muted animate-pulse rounded-xl flex items-center justify-center text-muted-foreground">Chargement de la carte...</div> });
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30000, retry: 1 } },
@@ -143,10 +144,11 @@ function SadekhApp() {
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [showChatbot, setShowChatbot] = useState(false);
   const [chatMessages, setChatMessages] = useState<Array<{ role: string; content: string }>>([
-    { role: 'assistant', content: 'chatbot.welcome' },
+    { role: 'assistant', content: 'Bienvenue sur SADEKH BTP ! 👋\nJe suis votre assistant immobilier. Posez-moi vos questions sur :\n• Les prix au Sénégal\n• Les quartiers et régions\n• Le paiement Wave / Orange Money\n• Les documents (titre foncier)\n• La publication d\'une annonce\n• Les plans architecturaux' },
   ]);
+  const [chatLoading, setChatLoading] = useState(false);
   const [publishStep, setPublishStep] = useState(1);
-  const [publishForm, setPublishForm] = useState({ type: 'maison', title: '', description: '', price: '', surfaceM2: '', rooms: '', region: 'Dakar', city: '', quartier: '', titleFoncier: false, priceNegotiable: false });
+  const [publishForm, setPublishForm] = useState({ type: 'maison', title: '', description: '', price: '', surfaceM2: '', rooms: '', region: 'Dakar', city: '', quartier: '', lat: '', lng: '', titleFoncier: false, priceNegotiable: false });
   const [publishing, setPublishing] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [listingView, setListingView] = useState<ListingView>('grid');
@@ -208,14 +210,25 @@ function SadekhApp() {
     enabled: !!currentUser,
   });
 
+  // Fetch payments
+  const { data: paymentsData } = useQuery({
+    queryKey: ['payments'],
+    queryFn: async () => {
+      const res = await fetch('/api/payments');
+      return res.json();
+    },
+  });
+
+  const paymentsList: any[] = paymentsData || [];
+
   // Check offline status
-  useState(() => {
+  useEffect(() => {
     setIsOffline(!navigator.onLine);
     const handler = () => setIsOffline(!navigator.onLine);
     window.addEventListener('online', handler);
     window.addEventListener('offline', handler);
     return () => { window.removeEventListener('online', handler); window.removeEventListener('offline', handler); };
-  });
+  }, []);
 
   // Fetch stats
   const { data: stats } = useQuery({
@@ -1122,6 +1135,15 @@ function SadekhApp() {
                   <Input className="mt-1" value={form.quartier} onChange={(e) => setPublishForm({ ...form, quartier: e.target.value })} placeholder="Almadies" />
                 </div>
               </div>
+              <div className="mt-4">
+                <Label className="flex items-center gap-2 mb-2"><MapPin className="w-4 h-4 text-primary" /> {lang === 'fr' ? 'Localisation GPS' : 'GPS Bee'}</Label>
+                <GpsPicker
+                  lat={form.lat ? parseFloat(form.lat) : null}
+                  lng={form.lng ? parseFloat(form.lng) : null}
+                  onSelect={(lat, lng) => setPublishForm({ ...form, lat: String(lat), lng: String(lng) })}
+                  lang={lang}
+                />
+              </div>
             </div>
           )}
 
@@ -1172,6 +1194,27 @@ function SadekhApp() {
           </Card>
         ))}
       </div>
+
+      {/* Payment history */}
+      {paymentsList.length > 0 && (
+        <Card className="p-4 mb-8">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2"><CreditCard className="w-5 h-5 text-amber-600" /> {lang === 'fr' ? 'Historique des paiements' : 'Historiq pajamaan'}</h2>
+          <div className="space-y-3">
+            {paymentsList.slice(0, 5).map((pay: any) => (
+              <div key={pay.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold ${pay.type === 'boost' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : pay.type === 'premium' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}`}>
+                  {pay.type === 'boost' ? <Zap className="w-4 h-4" /> : pay.type === 'premium' ? <Crown className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium">{pay.type === 'boost' ? 'Boost' : pay.type === 'premium' ? 'Premium' : 'Plan'} · <span className={`font-mono text-xs ${pay.status === 'completed' ? 'text-green-600' : 'text-amber-600'}`}>{pay.status}</span></div>
+                  <div className="text-xs text-muted-foreground">{pay.method === 'wave' ? 'Wave' : 'Orange Money'} · {pay.refWave || pay.id?.slice(0, 12)}</div>
+                </div>
+                <div className="text-sm font-bold text-primary shrink-0">{formatPrice(pay.amount, lang)}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* My properties */}
       <div className="mb-8">
@@ -1347,7 +1390,7 @@ function SadekhApp() {
               </div>
               <div>
                 <div className="font-semibold">{t('chatbot.title', lang)}</div>
-                <div className="text-xs text-primary-foreground/70">Claude Sonnet 4</div>
+                <div className="text-xs text-primary-foreground/70">Assistant SADEKH</div>
               </div>
               <button onClick={() => setShowChatbot(false)} className="ml-auto w-8 h-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30">
                 <X className="w-4 h-4" />
@@ -1356,12 +1399,12 @@ function SadekhApp() {
             <ScrollArea className="flex-1 p-4 max-h-[350px]">
               {chatMessages.map((msg, i) => (
                 <div key={i} className={`flex mb-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm ${
+                  <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm whitespace-pre-line ${
                     msg.role === 'user'
                       ? 'bg-primary text-primary-foreground rounded-br-md'
                       : 'bg-muted rounded-bl-md'
                   }`}>
-                    {t(msg.content, lang)}
+                    {msg.content}
                   </div>
                 </div>
               ))}
@@ -1370,20 +1413,27 @@ function SadekhApp() {
               <Input
                 placeholder={t('chatbot.placeholder', lang)}
                 className="flex-1 h-9 text-sm"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && (e.target as HTMLInputElement).value.trim()) {
-                    setChatMessages((prev) => [...prev, { role: 'user', content: (e.target as HTMLInputElement).value }]);
+                disabled={chatLoading}
+                onKeyDown={async (e) => {
+                  if (e.key === 'Enter') {
+                    const val = (e.target as HTMLInputElement).value.trim();
+                    if (!val) return;
+                    const userMsg = { role: 'user' as const, content: val };
+                    setChatMessages((prev) => [...prev, userMsg]);
                     (e.target as HTMLInputElement).value = '';
-                    setTimeout(() => {
-                      setChatMessages((prev) => [...prev, {
-                        role: 'assistant',
-                        content: 'Je peux vous aider à trouver le bien parfait ! Essayez nos filtres pour affiner votre recherche.',
-                      }]);
-                    }, 1000);
+                    setChatLoading(true);
+                    try {
+                      const res = await fetch('/api/chatbot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: val }) });
+                      const data = await res.json();
+                      setChatMessages((prev) => [...prev, { role: 'assistant', content: data.response || 'Désolé, une erreur est survenue.' }]);
+                    } catch {
+                      setChatMessages((prev) => [...prev, { role: 'assistant', content: 'Désolé, je suis temporairement indisponible. Réessayez dans un instant.' }]);
+                    }
+                    setChatLoading(false);
                   }
                 }}
               />
-              <Button size="icon" className="h-9 w-9"><Send className="w-4 h-4" /></Button>
+              <Button size="icon" className="h-9 w-9" disabled={chatLoading}>{chatLoading ? <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" /> : <Send className="w-4 h-4" />}</Button>
             </div>
           </motion.div>
         )}
@@ -1471,8 +1521,8 @@ function SadekhApp() {
               <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h2 className="text-2xl font-bold">Annonces Premium</h2>
-                    <p className="text-muted-foreground text-sm mt-1">Biens vérifiés et mis en avant par nos agents certifiés</p>
+                    <h2 className="text-2xl font-bold flex items-center gap-2"><Crown className="w-6 h-6 text-amber-500" /> {lang === 'fr' ? 'Annonces Premium' : 'Waxtu Premium'}</h2>
+                    <p className="text-muted-foreground text-sm mt-1">{lang === 'fr' ? 'Biens vérifiés et mis en avant par nos agents certifiés' : 'Waxtu yu jàpp, agent yu sertifikat wooynu wane'}</p>
                   </div>
                   <Button variant="outline" onClick={() => setView('listing')} className="gap-1">
                     {t('common.seeAll', lang)} <ChevronRight className="w-4 h-4" />
@@ -1497,7 +1547,7 @@ function SadekhApp() {
                   <div className="flex items-center justify-between mb-6">
                     <div>
                       <h2 className="text-2xl font-bold">Dernières annonces</h2>
-                      <p className="text-muted-foreground text-sm mt-1">Découvrez les biens récemment publiés</p>
+                      <p className="text-muted-foreground text-sm mt-1">{lang === 'fr' ? 'Découvrez les biens récemment publiés' : 'Waxtu yu bees tànneewun'}</p>
                     </div>
                     <Button variant="outline" onClick={() => { updateFilter('sort', 'recent'); setView('listing'); }} className="gap-1">
                       {t('common.seeAll', lang)} <ChevronRight className="w-4 h-4" />
@@ -1535,7 +1585,7 @@ function SadekhApp() {
               {/* Regions */}
               <section className="bg-muted/50 py-12">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6">
-                  <h2 className="text-2xl font-bold text-center mb-8">Explorez par région</h2>
+                  <h2 className="text-2xl font-bold text-center mb-8">{lang === 'fr' ? 'Explorez par région' : 'Seet ci région'}</h2>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
                     {REGIONS.slice(0, 6).map((region) => (
                       <button
