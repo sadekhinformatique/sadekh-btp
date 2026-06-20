@@ -1,9 +1,15 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, lazy, Suspense } from 'react';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { t, formatPrice, type Lang } from '@/lib/i18n';
+import dynamic from 'next/dynamic';
+
+// Lazy-loaded heavy components
+const MapView = dynamic(() => import("@/components/sadekh/MapView"), { ssr: false, loading: () => <div className="h-[500px] bg-muted animate-pulse rounded-xl flex items-center justify-center text-muted-foreground">Chargement de la carte...</div> });
+import PaymentModal from '@/components/sadekh/PaymentModal';
+import AuthModal from '@/components/sadekh/AuthModal';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30000, retry: 1 } },
@@ -32,7 +38,8 @@ import {
   ArrowUpDown, Filter, Grid3X3, List, ChevronLeft, ChevronRight,
   Check, Crown, AlertTriangle, Download, Share2, Flag, Gavel,
   Zap, Building, HandCoins, Bell, Settings, LogOut, LogIn, Image as ImageIcon,
-  Droplets, Ruler, DoorOpen, MapPinIcon, ChevronUp, Sparkles
+  Droplets, Ruler, DoorOpen, MapPinIcon, ChevronUp, Sparkles,
+  MapIcon, LayoutGrid, CreditCard
 } from 'lucide-react';
 
 /* ─── TYPES ─── */
@@ -89,8 +96,9 @@ interface Message {
   receiver: { id: string; name: string; profile: { fullName: string | null; avatar: string | null } | null };
 }
 
-type View = 'home' | 'listing' | 'favorites' | 'messages' | 'publish' | 'dashboard' | 'admin' | 'compare' | 'plans';
+type View = 'home' | 'listing' | 'favorites' | 'messages' | 'publish' | 'dashboard' | 'admin' | 'compare' | 'plans' | 'map';
 type PropertyType = 'all' | 'maison' | 'appartement' | 'terrain' | 'plan';
+type ListingView = 'grid' | 'map';
 
 const REGIONS = ['Dakar', 'Thiès', 'Saint-Louis', 'Ziguinchor', 'Kaolack', 'Rufisque', 'Louga', 'Diourbel', 'Tambacounda', 'Kolda', 'Sédhiou', 'Kédougou'];
 
@@ -141,6 +149,12 @@ function SadekhApp() {
   const [publishForm, setPublishForm] = useState({ type: 'maison', title: '', description: '', price: '', surfaceM2: '', rooms: '', region: 'Dakar', city: '', quartier: '', titleFoncier: false, priceNegotiable: false });
   const [publishing, setPublishing] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
+  const [listingView, setListingView] = useState<ListingView>('grid');
+  const [showAuth, setShowAuth] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [paymentProperty, setPaymentProperty] = useState<Property | null>(null);
+  const [paymentType, setPaymentType] = useState<'boost' | 'plan' | 'premium'>('boost');
+  const [showAlertPanel, setShowAlertPanel] = useState(false);
 
   // Fetch properties
   const { data: propertiesData, isLoading: loadingProperties } = useQuery({
@@ -245,6 +259,7 @@ function SadekhApp() {
             {[
               { id: 'home' as View, label: 'nav.home', icon: <Home className="w-4 h-4" /> },
               { id: 'listing' as View, label: 'nav.properties', icon: <Building2 className="w-4 h-4" /> },
+              { id: 'map' as View, label: 'Vue carte', icon: <MapIcon className="w-4 h-4" /> },
               { id: 'plans' as View, label: 'nav.plans', icon: <FileText className="w-4 h-4" /> },
               { id: 'favorites' as View, label: 'nav.favorites', icon: <Heart className="w-4 h-4" /> },
               { id: 'messages' as View, label: 'nav.messages', icon: <MessageCircle className="w-4 h-4" /> },
@@ -255,7 +270,7 @@ function SadekhApp() {
                 key={item.id}
                 variant={view === item.id ? 'default' : 'ghost'}
                 size="sm"
-                onClick={() => { setView(item.id); if (item.id === 'plans') { updateFilter('type', 'plan'); setView('listing'); } if (item.id === 'listing') { updateFilter('type', 'all'); } }}
+                onClick={() => { setView(item.id); if (item.id === 'plans') { updateFilter('type', 'plan'); setView('listing'); } if (item.id === 'listing') { updateFilter('type', 'all'); } if (item.id === 'map') { updateFilter('type', 'all'); } }}
                 className="gap-1.5 text-sm"
               >
                 {item.icon}
@@ -266,6 +281,33 @@ function SadekhApp() {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
+            {/* Alerts */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative" onClick={() => setShowAlertPanel(!showAlertPanel)}>
+                    <Bell className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{lang === 'fr' ? 'Alertes' : 'Alart'}</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            {/* Auth */}
+            {currentUser ? (
+              <Button variant="outline" size="sm" onClick={() => setCurrentUser(null)} className="gap-1.5 text-xs">
+                <div className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold">
+                  {currentUser.name?.[0] || 'U'}
+                </div>
+                <span className="hidden sm:inline max-w-[80px] truncate">{currentUser.name}</span>
+                <LogOut className="w-3 h-3" />
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setShowAuth(true)} className="gap-1.5">
+                <LogIn className="w-4 h-4" />
+                <span className="hidden sm:inline">{t('nav.login', lang)}</span>
+              </Button>
+            )}
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -509,6 +551,22 @@ function SadekhApp() {
     <div className="bg-card border-b border-border sticky top-[68px] z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
         <div className="flex flex-wrap items-center gap-3">
+          {/* Map / Grid toggle */}
+          <div className="flex bg-muted rounded-lg p-0.5 mr-2">
+            <button
+              onClick={() => setListingView('grid')}
+              className={`p-1.5 rounded-md transition-all ${listingView === 'grid' ? 'bg-white shadow-sm' : ''}`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => { setListingView('map'); if (view !== 'listing' && view !== 'map') setView('listing'); }}
+              className={`p-1.5 rounded-md transition-all ${listingView === 'map' ? 'bg-white shadow-sm' : ''}`}
+            >
+              <MapIcon className="w-4 h-4" />
+            </button>
+          </div>
+
           {/* Type tabs */}
           <div className="flex bg-muted rounded-lg p-0.5">
             {(['all', 'maison', 'appartement', 'terrain', 'plan'] as PropertyType[]).map((type) => (
@@ -584,7 +642,11 @@ function SadekhApp() {
     <div className="min-h-screen">
       {renderFilters()}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        {loadingProperties ? (
+        {listingView === 'map' ? (
+          <div className="rounded-xl overflow-hidden border border-border shadow-lg" style={{ height: 'calc(100vh - 200px)' }}>
+            <MapView properties={properties} lang={lang} onPropertyClick={openProperty} />
+          </div>
+        ) : loadingProperties ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
               <Card key={i} className="overflow-hidden">
@@ -765,8 +827,13 @@ function SadekhApp() {
                 <Send className="w-5 h-5" /> {t('property.contact', lang)}
               </Button>
               {p.type === 'plan' && (
-                <Button variant="outline" className="flex-1 gap-2 h-12 border-amber-500 text-amber-700">
-                  <Download className="w-5 h-5" /> {t('detail.downloadPlan', lang)}
+                <Button variant="outline" className="flex-1 gap-2 h-12 border-amber-500 text-amber-700" onClick={() => { setPaymentProperty(p); setPaymentType('plan'); }}>
+                  <CreditCard className="w-5 h-5" /> {t('detail.downloadPlan', lang)} — {formatPrice(p.price, lang)}
+                </Button>
+              )}
+              {p.type !== 'plan' && (
+                <Button variant="outline" size="icon" className="h-12 w-12 text-amber-600 border-amber-300 hover:bg-amber-50" onClick={() => { setPaymentProperty(p); setPaymentType('boost'); }} title="Booster cette annonce">
+                  <Zap className="w-5 h-5" />
                 </Button>
               )}
               <Button variant="outline" size="icon" className="h-12 w-12" onClick={() => { toggleCompare(p.id); }}>
@@ -1491,12 +1558,74 @@ function SadekhApp() {
               {renderCompare()}
             </motion.div>
           )}
+
+          {view === 'map' && (
+            <motion.div key="map" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <MapIcon className="w-7 h-7 text-primary" />
+                  <h1 className="text-2xl font-bold">{lang === 'fr' ? 'Vue carte' : 'Kaart'}</h1>
+                  <Badge variant="secondary">{properties.filter(p => p.lat && p.lng).length} biens géolocalisés</Badge>
+                </div>
+                <div className="rounded-xl overflow-hidden border border-border shadow-lg" style={{ height: 'calc(100vh - 200px)' }}>
+                  <MapView properties={properties} lang={lang} onPropertyClick={openProperty} />
+                </div>
+              </div>
+            </motion.div>
+          )}
         </AnimatePresence>
       </main>
 
       {renderFooter()}
       {renderPropertyDetail()}
       {renderChatbot()}
+
+      {/* Payment Modal */}
+      {paymentProperty && (
+        <PaymentModal
+          property={paymentProperty}
+          lang={lang}
+          open={true}
+          onClose={() => setPaymentProperty(null)}
+          type={paymentType}
+        />
+      )}
+
+      {/* Auth Modal */}
+      <AuthModal
+        open={showAuth}
+        onClose={() => setShowAuth(false)}
+        lang={lang}
+        onLogin={setCurrentUser}
+      />
+
+      {/* Alert Panel */}
+      {showAlertPanel && (
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 20 }}
+          className="fixed top-20 right-4 z-50 w-80 bg-card border border-border rounded-xl shadow-2xl p-4"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold flex items-center gap-2"><Bell className="w-4 h-4" /> {lang === 'fr' ? 'Alertes' : 'Alart'}</h3>
+            <button onClick={() => setShowAlertPanel(false)}><X className="w-4 h-4" /></button>
+          </div>
+          <div className="space-y-2">
+            {currentUser ? (
+              <div className="text-sm text-muted-foreground p-3 bg-muted rounded-lg">
+                <p className="font-medium text-foreground mb-1">Nouveau bien correspondant !</p>
+                <p>Villa 4 chambres à Mermoz — 80M FCFA</p>
+                <p className="text-xs mt-1">Il y a 2h</p>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                {lang === 'fr' ? 'Connectez-vous pour créer des alertes' : 'Seet ngir sos alart'}
+              </p>
+            )}
+          </div>
+        </motion.div>
+      )}
 
       {/* Compare banner */}
       {compareIds.length >= 2 && view !== 'compare' && (

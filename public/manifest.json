@@ -1,0 +1,26 @@
+{
+  "name": "SADEKH BTP",
+  "short_name": "SADEKH",
+  "description": "Marketplace immobilière sénégalaise — Maisons, appartements, terrains et plans",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1B5E20",
+  "orientation": "portrait-primary",
+  "lang": "fr",
+  "categories": ["real-estate", "business"],
+  "icons": [
+    {
+      "src": "/logo-sadekh.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo-sadekh.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
