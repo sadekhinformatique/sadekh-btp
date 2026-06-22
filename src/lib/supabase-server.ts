@@ -9,6 +9,7 @@ const poolConfig: PoolConfig = {
   max: 10,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000,
+  ssl: { rejectUnauthorized: false },
 };
 
 const globalForPool = globalThis as unknown as { pgPool: Pool | undefined };
