@@ -239,9 +239,15 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
 /* ------------------------------------------------------------------ */
 
 const fetchApi = async (url: string, options?: RequestInit) => {
-  const res = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...options });
-  if (!res.ok) throw new Error(`Erreur ${res.status}`);
-  return res.json();
+  try {
+    const res = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...options });
+    if (!res.ok) throw new Error(`Erreur ${res.status}`);
+    const text = await res.text();
+    try { return JSON.parse(text); } catch { return null; }
+  } catch (e) {
+    console.warn('fetchApi error:', url, e);
+    return null;
+  }
 };
 
 /* ================================================================== */
@@ -257,13 +263,17 @@ export default function AdminPanel({ onBack, siteSettings, onSettingsSaved }: Ad
   const { data: sessionData, isLoading: sessionLoading } = useQuery({
     queryKey: ['admin-session'],
     queryFn: () => fetchApi('/api/auth', { method: 'POST', body: JSON.stringify({ action: 'session' }) }),
+    retry: false,
   });
 
   useEffect(() => {
-    if (sessionData) {
-      setIsAdmin(sessionData?.user?.profile?.role === 'admin');
+    if (sessionLoading) return; // still loading
+    if (!sessionData || !sessionData.user) {
+      setIsAdmin(false); // not logged in or API error
+    } else {
+      setIsAdmin(sessionData.user?.profile?.role === 'admin');
     }
-  }, [sessionData]);
+  }, [sessionData, sessionLoading]);
 
   /* --- Properties state ------------------------------------------- */
   const [propSearch, setPropSearch] = useState('');
@@ -1481,6 +1491,28 @@ export default function AdminPanel({ onBack, siteSettings, onSettingsSaved }: Ad
     users: <UsersTab />,
     settings: <SettingsTab />,
   };
+
+  /* --- Auth guard ------------------------------------------------ */
+  if (sessionLoading || isAdmin === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="w-8 h-8 border-4 border-green-700 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center bg-gray-50">
+        <Shield className="w-20 h-20 text-gray-300 mb-6" />
+        <h1 className="text-2xl font-bold mb-2">Accès restreint</h1>
+        <p className="text-gray-500 mb-6 max-w-md">Cette interface est réservée aux administrateurs. Connectez-vous avec un compte admin pour y accéder.</p>
+        <Button onClick={onBack} variant="outline" className="gap-2">
+          <ArrowLeft className="w-4 h-4" /> Retour au site
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">

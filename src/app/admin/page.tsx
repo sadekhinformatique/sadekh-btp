@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Component, ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
 import { Toaster } from 'sonner';
@@ -18,16 +18,62 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30000, retry: 1 } },
 });
 
+class ErrorBoundary extends Component<
+  { children: ReactNode; fallback: ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('Admin ErrorBoundary:', error, info.componentStack);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
+}
+
 export default function AdminPage() {
   const [settings, setSettings] = useState<any>(null);
 
+  const errorFallback = (
+    <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center bg-background">
+      <div className="text-6xl mb-4">⚠️</div>
+      <h1 className="text-2xl font-bold mb-2">Erreur de chargement</h1>
+      <p className="text-muted-foreground mb-4 max-w-md">Une erreur inattendue est survenue dans le panneau d&apos;administration.</p>
+      <div className="flex gap-3">
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90"
+        >
+          Réessayer
+        </button>
+        <a href="/" className="px-4 py-2 border rounded-lg text-sm font-medium hover:bg-muted">
+          Retour au site
+        </a>
+      </div>
+    </div>
+  );
+
   return (
     <QueryClientProvider client={queryClient}>
-      <AdminPanel
-        onBack={() => { window.location.href = '/'; }}
-        siteSettings={settings}
-        onSettingsSaved={(s) => setSettings(s)}
-      />
+      <ErrorBoundary fallback={errorFallback}>
+        <AdminPanel
+          onBack={() => { window.location.href = '/'; }}
+          siteSettings={settings}
+          onSettingsSaved={(s) => setSettings(s)}
+        />
+      </ErrorBoundary>
       <Toaster position="top-right" richColors />
     </QueryClientProvider>
   );
