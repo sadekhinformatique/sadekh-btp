@@ -5,11 +5,11 @@ const DAKAR_QUARTIERS = ['Almadies', 'Plateau', 'Mermoz', 'Fann Hock', 'Omnium',
 const TYPES = ['maison', 'appartement', 'terrain', 'plan'];
 
 const DEMO_USERS = [
-  { email: 'amadou@sadekh.sn', name: 'Amadou Diallo', phone: '+221771234567', whatsapp: '+221771234567', agencyName: 'Sadekh Immobilier', verified: true },
-  { email: 'fatou@agence.sn', name: 'Fatou Ndiaye', phone: '+221782345678', whatsapp: '+221782345678', agencyName: 'Diaspora Homes', verified: true },
-  { email: 'ibrahima@archi.sn', name: 'Ibrahima Fall', phone: '+221763456789', whatsapp: '+221763456789', agencyName: 'Archidesign SN', verified: true },
-  { email: 'mariama@promo.sn', name: 'Mariama Sow', phone: '+221774567890', whatsapp: '+221774567890', agencyName: 'Promo Habitat', verified: false },
-  { email: 'ousmane@vendor.sn', name: 'Ousmane Ba', phone: '+221785678901', whatsapp: '+221785678901', verified: true },
+  { email: 'amadou@sadekh.sn', name: 'Amadou Diallo', phone: '+221771234567', whatsapp: '+221771234567', agencyName: 'Sadekh Immobilier', verified: true, role: 'admin' },
+  { email: 'fatou@agence.sn', name: 'Fatou Ndiaye', phone: '+221782345678', whatsapp: '+221782345678', agencyName: 'Diaspora Homes', verified: true, role: 'user' },
+  { email: 'ibrahima@archi.sn', name: 'Ibrahima Fall', phone: '+221763456789', whatsapp: '+221763456789', agencyName: 'Archidesign SN', verified: true, role: 'user' },
+  { email: 'mariama@promo.sn', name: 'Mariama Sow', phone: '+221774567890', whatsapp: '+221774567890', agencyName: 'Promo Habitat', verified: false, role: 'user' },
+  { email: 'ousmane@vendor.sn', name: 'Ousmane Ba', phone: '+221785678901', whatsapp: '+221785678901', verified: true, role: 'user' },
 ];
 
 const DEMO_PROPERTIES = [
@@ -54,6 +54,7 @@ async function seed() {
             phone: u.phone,
             whatsapp: u.whatsapp,
             agencyName: u.agencyName,
+            role: u.role || 'user',
             verified: u.verified,
             bio: `Agent immobilier professionnel basé au Sénégal. ${u.agencyName} vous accompagne dans tous vos projets immobiliers.`,
           },
@@ -75,6 +76,7 @@ async function seed() {
           fullName: 'Moussa Diop',
           phone: '+221779876543',
           whatsapp: '+221779876543',
+          role: 'user',
           bio: 'Acheteur intéressé par les biens immobiliers au Sénégal.',
         },
       },

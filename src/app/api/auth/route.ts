@@ -14,14 +14,16 @@ export async function POST(request: Request) {
       let profile = await pool.query(`SELECT * FROM profiles WHERE email = $1`, [email]);
       if (!profile.rows[0]) {
         await pool.query(
-          `INSERT INTO profiles (email, full_name) VALUES ($1, $2)`,
-          [email, fullName || email.split('@')[0]]
+          `INSERT INTO profiles (email, full_name, role) VALUES ($1, $2, $3)`,
+          [email, fullName || email.split('@')[0], 'user']
         );
         profile = await pool.query(`SELECT * FROM profiles WHERE email = $1`, [email]);
       }
 
+      const loadedProfile = toCamelCase(profile.rows[0]);
+      if (loadedProfile && !loadedProfile.role) loadedProfile.role = 'user';
       return NextResponse.json({
-        user: { ...data.user, profile: toCamelCase(profile.rows[0]) },
+        user: { ...data.user, profile: loadedProfile },
         session: data.session,
       });
     }
@@ -35,8 +37,8 @@ export async function POST(request: Request) {
 
       // Create profile
       await pool.query(
-        `INSERT INTO profiles (email, full_name, user_id) VALUES ($1, $2, $3) ON CONFLICT (email) DO NOTHING`,
-        [email, fullName, data.user?.id]
+        `INSERT INTO profiles (email, full_name, user_id, role) VALUES ($1, $2, $3, $4) ON CONFLICT (email) DO NOTHING`,
+        [email, fullName, data.user?.id, 'user']
       );
 
       return NextResponse.json({ user: data.user, message: 'Vérifiez votre email pour confirmer votre compte' });
@@ -61,8 +63,10 @@ export async function POST(request: Request) {
       if (!session?.user) return NextResponse.json({ user: null });
 
       const profile = await pool.query(`SELECT * FROM profiles WHERE email = $1`, [session.user.email]);
+      const loadedProfile = toCamelCase(profile.rows[0] || null);
+      if (loadedProfile && !loadedProfile.role) loadedProfile.role = 'user';
       return NextResponse.json({
-        user: { ...session.user, profile: toCamelCase(profile.rows[0] || null) },
+        user: { ...session.user, profile: loadedProfile },
       });
     }
 

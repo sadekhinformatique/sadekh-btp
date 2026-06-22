@@ -30,6 +30,7 @@ model Profile {
   phone       String?
   whatsapp    String?
   agencyName  String?
+  role        String   @default("user")
   verified    Boolean  @default(false)
   bio         String?
   avatar      String?
