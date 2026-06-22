@@ -8,7 +8,8 @@ import { t } from '@/lib/i18n';
 import { useStore } from '@/lib/store';
 import PropertyCard from './PropertyCard';
 import Filters from './Filters';
-import MapView from './MapView';
+import dynamic from 'next/dynamic';
+const MapView = dynamic(() => import('./MapView'), { ssr: false });
 import type { Property } from '@/lib/types';
 
 export default function Listing({

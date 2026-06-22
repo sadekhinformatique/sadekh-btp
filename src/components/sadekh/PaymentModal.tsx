@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { X, Phone, CreditCard, Check, AlertCircle, Loader2, MessageCircle, Shield } from 'lucide-react';
-import type { Property } from '@/app/page';
+import type { Property } from '@/lib/types';
 
 interface PaymentModalProps {
   property: Property;

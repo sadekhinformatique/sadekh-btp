@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
+import dynamic from 'next/dynamic';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
@@ -28,7 +29,7 @@ import AdminView from '@/components/sadekh/AdminView';
 import FavoritesView from '@/components/sadekh/FavoritesView';
 import MessagesView from '@/components/sadekh/MessagesView';
 import CompareView from '@/components/sadekh/CompareView';
-import MapView from '@/components/sadekh/MapView';
+const MapView = dynamic(() => import('@/components/sadekh/MapView'), { ssr: false });
 import type { Property, FavItem, Message, PropertiesResponse, Pagination } from '@/lib/types';
 
 const queryClient = new QueryClient({
