@@ -107,12 +107,14 @@ function SadekhApp() {
   const { data: favorites, refetch: refetchFav } = useQuery({
     queryKey: ['favorites'],
     queryFn: async () => { const res = await fetch('/api/favorites'); return res.json() as Promise<FavItem[]>; },
+    enabled: !!currentUser,
   });
 
   // Fetch messages
   const { data: messages } = useQuery({
     queryKey: ['messages'],
     queryFn: async () => { const res = await fetch('/api/messages'); return res.json() as Promise<Message[]>; },
+    enabled: !!currentUser,
   });
 
   // Fetch alerts
@@ -126,6 +128,7 @@ function SadekhApp() {
   const { data: paymentsData } = useQuery({
     queryKey: ['payments'],
     queryFn: async () => { const res = await fetch('/api/payments'); return res.json(); },
+    enabled: !!currentUser,
   });
 
   // Fetch stats
@@ -136,9 +139,9 @@ function SadekhApp() {
 
   const properties: Property[] = propertiesData?.properties || [];
   const pagination: Pagination = propertiesData?.pagination || { page: 1, limit: 12, total: 0, pages: 1 };
-  const paymentsList: any[] = paymentsData || [];
+  const paymentsList: any[] = Array.isArray(paymentsData) ? paymentsData : [];
   const favoriteIds = useMemo(
-    () => new Set((favorites || []).map((f: FavItem) => f.propertyId)),
+    () => new Set((Array.isArray(favorites) ? favorites : []).map((f: FavItem) => f.propertyId)),
     [favorites]
   );
 
@@ -315,7 +318,7 @@ function SadekhApp() {
                 stats={stats}
                 paymentsList={paymentsList}
                 properties={properties}
-                messages={messages || []}
+                messages={Array.isArray(messages) ? messages : []}
                 favoriteIds={favoriteIds}
                 compareIds={compareIds}
                 onToggleFavorite={toggleFavorite}
