@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import StructuredData from "@/components/sadekh/StructuredData";
+import { pool, toCamelCase } from "@/lib/supabase-server";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,34 +14,57 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL("https://sadekhbtp.sn"),
-  title: "SADEKH BTP — Marketplace Immobilière Sénégalaise",
-  description: "Maisons, appartements, terrains et plans architecturaux. La première marketplace immobilière pensée pour le marché sénégalais. Paiement mobile Wave & Orange Money.",
-  keywords: "immobilier, Sénégal, Dakar, maison, appartement, terrain, plan architectural, Wave, Orange Money, SADEKH BTP, immobilier Sénégal, vente maison Dakar",
-  manifest: "/manifest.json",
-  openGraph: {
-    title: "SADEKH BTP — Marketplace Immobilière Sénégalaise",
-    description: "Trouvez votre bien immobilier au Sénégal. Maisons, appartements, terrains et plans architecturaux.",
-    type: "website",
-    locale: "fr_SN",
-    siteName: "SADEKH BTP",
-    images: [{ url: "/logo-sadekh.png", width: 2944, height: 2944, alt: "SADEKH BTP" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "SADEKH BTP — Marketplace Immobilière Sénégalaise",
-    description: "Trouvez votre bien immobilier au Sénégal",
-    images: ["/logo-sadekh.png"],
-  },
-  other: {
-    "mobile-web-app-capable": "yes",
-    "apple-mobile-web-app-capable": "yes",
-    "apple-mobile-web-app-status-bar-style": "default",
-    "apple-mobile-web-app-title": "SADEKH",
-    "theme-color": "#1B5E20",
-  },
+const defaultMeta = {
+  siteName: "SADEKH BTP",
+  seoTitle: "SADEKH BTP — Marketplace Immobilière Sénégalaise",
+  seoDescription: "Maisons, appartements, terrains et plans architecturaux. La première marketplace immobilière pensée pour le marché sénégalais. Paiement mobile Wave & Orange Money.",
+  seoKeywords: "immobilier, Sénégal, Dakar, maison, appartement, terrain, plan architectural",
+  logoUrl: "/logo-sadekh.png",
+  primaryColor: "#1B5E20",
 };
+
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const result = await pool.query(`SELECT * FROM site_settings WHERE id = 1`);
+    const s = result.rows[0] ? toCamelCase(result.rows[0]) : defaultMeta;
+    return {
+      metadataBase: new URL("https://sadekhbtp.sn"),
+      title: s.seoTitle || defaultMeta.seoTitle,
+      description: s.seoDescription || defaultMeta.seoDescription,
+      keywords: s.seoKeywords || defaultMeta.seoKeywords,
+      manifest: "/manifest.json",
+      openGraph: {
+        title: s.seoTitle || defaultMeta.seoTitle,
+        description: s.seoDescription || defaultMeta.seoDescription,
+        type: "website",
+        locale: "fr_SN",
+        siteName: s.siteName || defaultMeta.siteName,
+        images: [{ url: s.logoUrl || defaultMeta.logoUrl, width: 2944, height: 2944, alt: s.siteName || defaultMeta.siteName }],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: s.seoTitle || defaultMeta.seoTitle,
+        description: s.seoDescription || defaultMeta.seoDescription,
+        images: [s.logoUrl || defaultMeta.logoUrl],
+      },
+      other: {
+        "mobile-web-app-capable": "yes",
+        "apple-mobile-web-app-capable": "yes",
+        "apple-mobile-web-app-status-bar-style": "default",
+        "apple-mobile-web-app-title": (s.siteName || defaultMeta.siteName).split(' ')[0],
+        "theme-color": s.primaryColor || defaultMeta.primaryColor,
+      },
+    };
+  } catch {
+    return {
+      metadataBase: new URL("https://sadekhbtp.sn"),
+      title: defaultMeta.seoTitle,
+      description: defaultMeta.seoDescription,
+      keywords: defaultMeta.seoKeywords,
+      manifest: "/manifest.json",
+    };
+  }
+}
 
 export default function RootLayout({
   children,

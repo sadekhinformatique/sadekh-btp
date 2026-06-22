@@ -144,7 +144,7 @@ function SadekhApp() {
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [showChatbot, setShowChatbot] = useState(false);
   const [chatMessages, setChatMessages] = useState<Array<{ role: string; content: string }>>([
-    { role: 'assistant', content: 'Bienvenue sur SADEKH BTP ! 👋\nJe suis votre assistant immobilier. Posez-moi vos questions sur :\n• Les prix au Sénégal\n• Les quartiers et régions\n• Le paiement Wave / Orange Money\n• Les documents (titre foncier)\n• La publication d\'une annonce\n• Les plans architecturaux' },
+    { role: 'assistant', content: '' },
   ]);
   const [chatLoading, setChatLoading] = useState(false);
   const [publishStep, setPublishStep] = useState(1);
@@ -170,6 +170,29 @@ function SadekhApp() {
       .then(data => { if (data.user) setCurrentUser(data.user); })
       .catch(() => {});
   }, []);
+
+  // Load site settings from DB
+  const { data: settingsData } = useQuery({
+    queryKey: ['site-settings'],
+    queryFn: async () => { const r = await fetch('/api/admin/settings'); return r.json(); },
+    staleTime: 5 * 60 * 1000,
+  });
+  const [siteSettings, setSiteSettings] = useState<any>(null);
+  React.useEffect(() => {
+    if (settingsData && !settingsData.error) {
+      React.startTransition(() => setSiteSettings(settingsData));
+    }
+  }, [settingsData]);
+
+  // Update chatbot welcome message when site settings load
+  useEffect(() => {
+    if (siteSettings?.siteName) {
+      setChatMessages([{
+        role: 'assistant',
+        content: `Bienvenue sur ${siteSettings.siteName} !\nJe suis votre assistant immobilier. Posez-moi vos questions sur :\n- Les prix au Sénégal\n- Les quartiers et régions\n- Le paiement Wave / Orange Money\n- Les documents (titre foncier)\n- La publication d'une annonce\n- Les plans architecturaux`,
+      }]);
+    }
+  }, [siteSettings?.siteName]);
 
   // Fetch properties
   const { data: propertiesData, isLoading: loadingProperties } = useQuery({
@@ -253,7 +276,7 @@ function SadekhApp() {
     () => new Set((favorites || []).map((f: FavItem) => f.propertyId)),
     [favorites]
   );
-  const unreadCount = (messages || []).filter((m: Message) => !m.readAt && m.receiverId !== 'demo-buyer').length;
+  const unreadCount = (Array.isArray(messages) ? messages : []).filter((m: Message) => !m.readAt && currentUser && m.receiverId === currentUser.id).length;
 
   const toggleFavorite = async (propertyId: string) => {
     await fetch('/api/favorites', {
@@ -295,8 +318,8 @@ function SadekhApp() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <button onClick={() => { setView('home'); setPage(1); setSearchQuery(''); setFilters({ type: 'all', region: 'all', maxPrice: '', minSurface: '', rooms: '', sort: 'recent' }); }} className="flex items-center gap-2 shrink-0">
-            <img src="/logo-sadekh.png" alt="SADEKH BTP" className="h-9 w-9 rounded-full object-cover" />
-            <span className="font-bold text-lg tracking-tight text-primary hidden sm:block">SADEKH <span className="text-amber-600">BTP</span></span>
+            <img src={siteSettings?.logoUrl || '/logo-sadekh.png'} alt={siteSettings?.siteName || 'SADEKH BTP'} className="h-9 w-9 rounded-full object-cover" />
+            <span className="font-bold text-lg tracking-tight text-primary hidden sm:block">{siteSettings?.siteName || 'SADEKH BTP'}</span>
           </button>
 
           {/* Desktop Nav */}
@@ -391,8 +414,8 @@ function SadekhApp() {
               <SheetContent side="right" className="w-72">
                 <SheetHeader>
                   <SheetTitle className="flex items-center gap-2">
-                    <img src="/logo-sadekh.png" alt="SADEKH BTP" className="h-8 w-8 rounded-full" />
-                    SADEKH BTP
+                    <img src={siteSettings?.logoUrl || '/logo-sadekh.png'} alt={siteSettings?.siteName || 'SADEKH BTP'} className="h-8 w-8 rounded-full" />
+                    {siteSettings?.siteName || 'SADEKH BTP'}
                   </SheetTitle>
                 </SheetHeader>
                 <nav className="flex flex-col gap-1 mt-6">
@@ -435,10 +458,14 @@ function SadekhApp() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 md:py-24 relative z-10">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-4 max-w-4xl">
-            {t('hero.title', lang)}
+            {lang === 'wo'
+              ? (siteSettings?.heroTitleWo || t('hero.title', lang))
+              : (siteSettings?.heroTitleFr || t('hero.title', lang))}
           </h1>
           <p className="text-lg sm:text-xl text-green-100 mb-8 max-w-2xl">
-            {t('hero.subtitle', lang)}
+            {lang === 'wo'
+              ? (siteSettings?.heroSubtitleWo || t('hero.subtitle', lang))
+              : (siteSettings?.heroSubtitleFr || t('hero.subtitle', lang))}
           </p>
         </motion.div>
 
@@ -930,7 +957,7 @@ function SadekhApp() {
   const renderMessages = () => {
     const conversations = (messages || []).reduce((acc: any, m: Message) => {
       const key = [m.senderId, m.receiverId].sort().join('-');
-      if (!acc[key]) acc[key] = { partner: m.senderId === 'demo-buyer' ? m.receiver : m.sender, messages: [] };
+      if (!acc[key]) acc[key] = { partner: m.senderId === (currentUser?.id || '') ? m.receiver : m.sender, messages: [] };
       acc[key].messages.push(m);
       return acc;
     }, {});
@@ -973,9 +1000,9 @@ function SadekhApp() {
             </div>
             <ScrollArea className="flex-1 p-4">
               {(messages || []).map((m: Message) => (
-                <div key={m.id} className={`flex mb-4 ${m.senderId === 'demo-buyer' ? 'justify-end' : 'justify-start'}`}>
+                <div key={m.id} className={`flex mb-4 ${m.senderId === (currentUser?.id || '') ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[70%] px-4 py-2.5 rounded-2xl text-sm ${
-                    m.senderId === 'demo-buyer'
+                    m.senderId === (currentUser?.id || '')
                       ? 'bg-primary text-primary-foreground rounded-br-md'
                       : 'bg-muted rounded-bl-md'
                   }`}>
@@ -1413,7 +1440,7 @@ function SadekhApp() {
               </div>
               <div>
                 <div className="font-semibold">{t('chatbot.title', lang)}</div>
-                <div className="text-xs text-primary-foreground/70">Assistant SADEKH</div>
+                <div className="text-xs text-primary-foreground/70">Assistant {siteSettings?.siteName || ''}</div>
               </div>
               <button onClick={() => setShowChatbot(false)} className="ml-auto w-8 h-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30">
                 <X className="w-4 h-4" />
@@ -1480,11 +1507,13 @@ function SadekhApp() {
           {/* About */}
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 mb-4">
-              <img src="/logo-sadekh.png" alt="SADEKH BTP" className="h-8 w-8 rounded-full" />
-              <span className="font-bold text-lg">SADEKH <span className="text-amber-600">BTP</span></span>
+              <img src={siteSettings?.logoUrl || '/logo-sadekh.png'} alt={siteSettings?.siteName || 'SADEKH BTP'} className="h-8 w-8 rounded-full" />
+              <span className="font-bold text-lg">{siteSettings?.siteName || 'SADEKH BTP'}</span>
             </div>
             <p className="text-muted-foreground text-sm leading-relaxed max-w-md">
-              {t('footer.about.desc', lang)}
+              {lang === 'wo'
+                ? (siteSettings?.footerAboutWo || t('footer.about.desc', lang))
+                : (siteSettings?.footerAboutFr || t('footer.about.desc', lang))}
             </p>
             <div className="flex gap-3 mt-4">
               {['Wave', 'Orange Money'].map((m) => (
@@ -1519,7 +1548,7 @@ function SadekhApp() {
         <Separator className="my-8" />
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-          <p>© {new Date().getFullYear()} SADEKH BTP. {t('footer.rights', lang)}</p>
+          <p>© {new Date().getFullYear()} {siteSettings?.siteName || 'SADEKH BTP'}. {t('footer.rights', lang)}</p>
           <div className="flex gap-4">
             <button className="hover:text-foreground transition-colors">{t('footer.legal', lang)}</button>
             <button className="hover:text-foreground transition-colors">{t('footer.privacy', lang)}</button>
