@@ -20,7 +20,7 @@ const defaultMeta = {
   seoDescription: "Maisons, appartements, terrains et plans architecturaux. La première marketplace immobilière pensée pour le marché sénégalais. Paiement mobile Wave & Orange Money.",
   seoKeywords: "immobilier, Sénégal, Dakar, maison, appartement, terrain, plan architectural",
   logoUrl: "/logo-sadekh.png",
-  primaryColor: "#1B5E20",
+  primaryColor: "#df2531",
 };
 
 export async function generateMetadata(): Promise<Metadata> {

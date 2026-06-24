@@ -49,8 +49,8 @@ export default function PublishForm() {
     return (
       <div className="max-w-2xl mx-auto px-4 py-20 text-center">
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring' }}>
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Check className="w-10 h-10 text-green-600" />
+          <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Check className="w-10 h-10 text-primary" />
           </div>
           <h2 className="text-2xl font-bold mb-2">{t('publish.success', lang)}</h2>
         </motion.div>

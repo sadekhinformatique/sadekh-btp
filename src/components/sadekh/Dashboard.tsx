@@ -40,10 +40,10 @@ export default function Dashboard({
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {[
-          { label: t('dashboard.activeProperties', lang), value: stats?.activeProperties || 16, icon: <Building className="w-5 h-5" />, color: 'text-green-600 bg-green-100 dark:bg-green-900/30' },
+          { label: t('dashboard.activeProperties', lang), value: stats?.activeProperties || 16, icon: <Building className="w-5 h-5" />, color: 'text-primary bg-red-100 dark:bg-red-900/30' },
           { label: t('dashboard.totalViews', lang), value: stats?.totalViews || 0, icon: <Eye className="w-5 h-5" />, color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30' },
           { label: t('dashboard.totalContacts', lang), value: stats?.totalMessages || 4, icon: <MessageCircle className="w-5 h-5" />, color: 'text-purple-600 bg-purple-100 dark:bg-purple-900/30' },
-          { label: t('dashboard.payments', lang), value: stats?.premiumProperties || 0, icon: <HandCoins className="w-5 h-5" />, color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30' },
+          { label: t('dashboard.payments', lang), value: stats?.premiumProperties || 0, icon: <HandCoins className="w-5 h-5" />, color: 'text-gray-600 bg-gray-100 dark:bg-gray-800/50' },
         ].map((stat) => (
           <Card key={stat.label} className="p-4">
             <div className="flex items-center justify-between mb-3">
@@ -57,15 +57,15 @@ export default function Dashboard({
 
       {paymentsList.length > 0 && (
         <Card className="p-4 mb-8">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2"><CreditCard className="w-5 h-5 text-amber-600" /> {lang === 'fr' ? 'Historique des paiements' : 'Historiq pajamaan'}</h2>
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2"><CreditCard className="w-5 h-5 text-primary" /> {lang === 'fr' ? 'Historique des paiements' : 'Historiq pajamaan'}</h2>
           <div className="space-y-3">
             {paymentsList.slice(0, 5).map((pay: any) => (
               <div key={pay.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold ${pay.type === 'boost' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : pay.type === 'premium' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}`}>
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold ${pay.type === 'boost' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : pay.type === 'premium' ? 'bg-gray-100 text-gray-700 dark:bg-gray-800/50 dark:text-gray-400' : 'bg-gray-200 text-gray-700 dark:bg-gray-800/50 dark:text-gray-400'}`}>
                   {pay.type === 'boost' ? <Zap className="w-4 h-4" /> : pay.type === 'premium' ? <Crown className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium">{pay.type === 'boost' ? 'Boost' : pay.type === 'premium' ? 'Premium' : 'Plan'} · <span className={`font-mono text-xs ${pay.status === 'completed' ? 'text-green-600' : 'text-amber-600'}`}>{pay.status}</span></div>
+                  <div className="text-sm font-medium">{pay.type === 'boost' ? 'Boost' : pay.type === 'premium' ? 'Premium' : 'Plan'} · <span className={`font-mono text-xs ${pay.status === 'completed' ? 'text-primary' : 'text-gray-600'}`}>{pay.status}</span></div>
                   <div className="text-xs text-muted-foreground">{pay.method === 'wave' ? 'Wave' : 'Orange Money'} · {pay.refWave || pay.id?.slice(0, 12)}</div>
                 </div>
                 <div className="text-sm font-bold text-primary shrink-0">{formatPrice(pay.amount, lang)}</div>

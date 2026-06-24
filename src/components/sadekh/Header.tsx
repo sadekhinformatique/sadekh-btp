@@ -57,7 +57,7 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 dark:bg-gray-950/95 backdrop-blur-sm border-b border-border">
-      <div className="senegal-stripe" />
+      <div className="brand-stripe" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16">
           <button onClick={resetView} className="flex items-center gap-2 shrink-0">

@@ -10,8 +10,8 @@ const TYPE_LABELS: Record<string, string> = { maison: 'Maison', appartement: 'Ap
 const STATUS_LABELS: Record<string, string> = { draft: 'Brouillon', active: 'Active', sold: 'Vendue', suspended: 'Suspendue' };
 const STATUS_STYLES: Record<string, string> = {
   draft: 'bg-gray-100 text-gray-600 border-gray-200',
-  active: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  sold: 'bg-blue-50 text-blue-700 border-blue-200',
+  active: 'bg-red-50 text-red-700 border-red-200',
+  sold: 'bg-gray-100 text-gray-600 border-gray-200',
   suspended: 'bg-red-50 text-red-700 border-red-200',
 };
 
@@ -98,11 +98,11 @@ export default function PropertiesSection() {
     <div className="space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-green-900">Biens immobiliers</h1>
-          <p className="text-sm text-green-600 mt-1">{properties.length} annonce{properties.length > 1 ? 's' : ''} au total</p>
+          <h1 className="text-2xl font-bold text-gray-900">Biens immobiliers</h1>
+          <p className="text-sm text-gray-600 mt-1">{properties.length} annonce{properties.length > 1 ? 's' : ''} au total</p>
         </div>
         <button onClick={openNew}
-          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-700 to-green-600 text-white rounded-xl text-sm font-medium hover:from-green-800 hover:to-green-700 transition-all shadow-md shadow-green-200">
+          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-700 to-red-600 text-white rounded-xl text-sm font-medium hover:from-red-800 hover:to-red-700 transition-all shadow-md shadow-red-200">
           <Plus className="w-4 h-4" />
           Ajouter un bien
         </button>
@@ -110,94 +110,94 @@ export default function PropertiesSection() {
 
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-green-400" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher un bien..."
-            className="w-full pl-10 pr-4 py-2.5 bg-white border border-green-200 rounded-xl text-sm text-green-900 placeholder-green-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all" />
+            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all" />
         </div>
-        <div className="flex items-center gap-2 text-green-500">
+        <div className="flex items-center gap-2 text-gray-500">
           <Filter className="w-4 h-4" />
           <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}
-            className="px-3 py-2.5 bg-white border border-green-200 rounded-xl text-sm text-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 cursor-pointer">
+            className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500 cursor-pointer">
             <option value="all">Tous types</option>
             {PROPERTY_TYPES.map((t) => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
           </select>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2.5 bg-white border border-green-200 rounded-xl text-sm text-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 cursor-pointer">
+            className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500 cursor-pointer">
             <option value="all">Tous statuts</option>
             {STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
           </select>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-green-100/70 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         {loading ? (
           <div className="p-6 space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-12 bg-green-50 rounded-xl animate-pulse" />)}
+            {Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-12 bg-gray-50 rounded-xl animate-pulse" />)}
           </div>
         ) : filtered.length === 0 ? (
           <div className="p-16 text-center">
-            <Building2Icon className="w-12 h-12 mx-auto text-green-300 mb-3" />
-            <p className="text-green-500 font-medium">Aucun bien trouvé</p>
+            <Building2Icon className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+            <p className="text-gray-500 font-medium">Aucun bien trouvé</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-green-100 bg-gradient-to-r from-green-50 to-green-50/50">
-                  <th className="text-left px-4 py-3.5 font-semibold text-green-700 text-xs uppercase tracking-wider">Titre</th>
-                  <th className="text-left px-4 py-3.5 font-semibold text-green-700 text-xs uppercase tracking-wider">Type</th>
-                  <th className="text-right px-4 py-3.5 font-semibold text-green-700 text-xs uppercase tracking-wider">Prix</th>
-                  <th className="text-left px-4 py-3.5 font-semibold text-green-700 text-xs uppercase tracking-wider">Statut</th>
-                  <th className="text-center px-4 py-3.5 font-semibold text-green-700 text-xs uppercase tracking-wider">Vues</th>
-                  <th className="text-center px-4 py-3.5 font-semibold text-green-700 text-xs uppercase tracking-wider">Premium</th>
-                  <th className="text-left px-4 py-3.5 font-semibold text-green-700 text-xs uppercase tracking-wider">Date</th>
-                  <th className="text-center px-4 py-3.5 font-semibold text-green-700 text-xs uppercase tracking-wider">Actions</th>
+                <tr className="border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-50/50">
+                  <th className="text-left px-4 py-3.5 font-semibold text-gray-700 text-xs uppercase tracking-wider">Titre</th>
+                  <th className="text-left px-4 py-3.5 font-semibold text-gray-700 text-xs uppercase tracking-wider">Type</th>
+                  <th className="text-right px-4 py-3.5 font-semibold text-gray-700 text-xs uppercase tracking-wider">Prix</th>
+                  <th className="text-left px-4 py-3.5 font-semibold text-gray-700 text-xs uppercase tracking-wider">Statut</th>
+                  <th className="text-center px-4 py-3.5 font-semibold text-gray-700 text-xs uppercase tracking-wider">Vues</th>
+                  <th className="text-center px-4 py-3.5 font-semibold text-gray-700 text-xs uppercase tracking-wider">Premium</th>
+                  <th className="text-left px-4 py-3.5 font-semibold text-gray-700 text-xs uppercase tracking-wider">Date</th>
+                  <th className="text-center px-4 py-3.5 font-semibold text-gray-700 text-xs uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((p) => (
-                  <tr key={p.id} className="border-b border-green-50 hover:bg-green-50/40 transition-colors">
+                  <tr key={p.id} className="border-b border-gray-50 hover:bg-red-50/40 transition-colors">
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-3">
                         {p.images?.[0] ? (
-                          <img src={p.images[0]} alt="" className="w-10 h-10 rounded-lg object-cover border border-green-100 shrink-0" />
+                          <img src={p.images[0]} alt="" className="w-10 h-10 rounded-lg object-cover border border-gray-100 shrink-0" />
                         ) : (
-                          <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
-                            <Building2Icon className="w-5 h-5 text-green-400" />
+                          <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                            <Building2Icon className="w-5 h-5 text-gray-400" />
                           </div>
                         )}
-                        <span className="font-medium text-green-900 truncate max-w-[200px]">{p.title || '—'}</span>
+                        <span className="font-medium text-gray-900 truncate max-w-[200px]">{p.title || '—'}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3.5">
-                      <span className="text-green-600 bg-green-50 px-2.5 py-1 rounded-lg text-xs font-medium">{TYPE_LABELS[p.type] || p.type}</span>
+                      <span className="text-gray-600 bg-gray-50 px-2.5 py-1 rounded-lg text-xs font-medium">{TYPE_LABELS[p.type] || p.type}</span>
                     </td>
-                    <td className="px-4 py-3.5 text-right font-medium text-green-800">{p.price ? `${fmtPrice(p.price)} F` : '—'}</td>
+                    <td className="px-4 py-3.5 text-right font-medium text-gray-800">{p.price ? `${fmtPrice(p.price)} F` : '—'}</td>
                     <td className="px-4 py-3.5">
                       <span className={`inline-block px-2.5 py-1 rounded-lg text-xs font-medium border ${STATUS_STYLES[p.status] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
                         {STATUS_LABELS[p.status] || p.status}
                       </span>
                     </td>
                     <td className="px-4 py-3.5 text-center">
-                      <span className="flex items-center justify-center gap-1.5 text-green-500 text-xs font-medium">
+                      <span className="flex items-center justify-center gap-1.5 text-gray-500 text-xs font-medium">
                         <Eye className="w-3.5 h-3.5" />{p.viewsCount || 0}
                       </span>
                     </td>
                     <td className="px-4 py-3.5 text-center">
                       <button onClick={() => togglePremium(p.id, !p.isPremium)}
-                        className={`p-1.5 rounded-lg transition-all ${p.isPremium ? 'bg-amber-50 text-amber-500 hover:bg-amber-100' : 'bg-gray-50 text-gray-300 hover:bg-gray-100'}`}>
+                        className={`p-1.5 rounded-lg transition-all ${p.isPremium ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'bg-gray-50 text-gray-300 hover:bg-gray-100'}`}>
                         <Crown className="w-4 h-4" />
                       </button>
                     </td>
-                    <td className="px-4 py-3.5 text-xs text-green-500">{fmtDate(p.createdAt)}</td>
+                    <td className="px-4 py-3.5 text-xs text-gray-500">{fmtDate(p.createdAt)}</td>
                     <td className="px-4 py-3.5">
                       <div className="flex items-center justify-center gap-1">
                         <button onClick={() => openEdit(p)}
-                          className="p-2 hover:bg-blue-50 rounded-lg transition-colors text-green-500 hover:text-blue-600" title="Modifier">
+                          className="p-2 hover:bg-red-50 rounded-lg transition-colors text-gray-500 hover:text-red-600" title="Modifier">
                           <Pencil className="w-4 h-4" />
                         </button>
                         <button onClick={() => deleteProp(p.id)}
-                          className="p-2 hover:bg-red-50 rounded-lg transition-colors text-green-500 hover:text-red-500" title="Supprimer">
+                          className="p-2 hover:bg-red-50 rounded-lg transition-colors text-gray-500 hover:text-red-500" title="Supprimer">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -212,11 +212,11 @@ export default function PropertiesSection() {
 
       {dialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setDialogOpen(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto border border-green-100" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-5 border-b border-green-100">
-              <h2 className="font-bold text-lg text-green-900">{editing ? 'Modifier le bien' : 'Ajouter un bien'}</h2>
-              <button onClick={() => setDialogOpen(false)} className="p-1.5 hover:bg-green-50 rounded-xl transition-colors">
-                <X className="w-5 h-5 text-green-500" />
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto border border-gray-200" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-5 border-b border-gray-200">
+              <h2 className="font-bold text-lg text-gray-900">{editing ? 'Modifier le bien' : 'Ajouter un bien'}</h2>
+              <button onClick={() => setDialogOpen(false)} className="p-1.5 hover:bg-gray-100 rounded-xl transition-colors">
+                <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
             <div className="p-5 grid grid-cols-2 gap-4">
@@ -231,13 +231,13 @@ export default function PropertiesSection() {
               <Field label="Ville" value={form.city} onChange={(v) => setForm({ ...form, city: v })} />
               <Field label="Quartier" value={form.quartier} onChange={(v) => setForm({ ...form, quartier: v })} />
             </div>
-            <div className="flex justify-end gap-3 p-5 border-t border-green-100 bg-green-50/30">
+            <div className="flex justify-end gap-3 p-5 border-t border-gray-200 bg-gray-50/30">
               <button onClick={() => setDialogOpen(false)}
-                className="px-5 py-2.5 text-sm font-medium text-green-700 hover:bg-white rounded-xl transition-colors border border-green-200">
+                className="px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-white rounded-xl transition-colors border border-gray-200">
                 Annuler
               </button>
               <button onClick={save} disabled={saving}
-                className="px-5 py-2.5 text-sm font-medium bg-gradient-to-r from-green-700 to-green-600 text-white rounded-xl hover:from-green-800 hover:to-green-700 transition-all disabled:opacity-50 shadow-md shadow-green-200">
+                className="px-5 py-2.5 text-sm font-medium bg-gradient-to-r from-red-700 to-red-600 text-white rounded-xl hover:from-red-800 hover:to-red-700 transition-all disabled:opacity-50 shadow-md shadow-red-200">
                 {saving ? 'Enregistrement...' : editing ? 'Mettre à jour' : 'Créer le bien'}
               </button>
             </div>
@@ -260,10 +260,10 @@ function Field({ label, value, onChange, type, select, options, textarea, span }
   label: string; value: string; onChange: (v: string) => void;
   type?: string; select?: boolean; options?: { v: string; l: string }[]; textarea?: boolean; span?: number;
 }) {
-  const cls = `w-full px-3.5 py-2.5 bg-white border border-green-200 rounded-xl text-sm text-green-900 placeholder-green-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${span ? 'col-span-2' : ''}`;
+  const cls = `w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all ${span ? 'col-span-2' : ''}`;
   return (
     <div className={`space-y-1.5 ${span === 2 ? 'col-span-2' : ''}`}>
-      <label className="text-sm font-medium text-green-700">{label}</label>
+      <label className="text-sm font-medium text-gray-700">{label}</label>
       {select ? (
         <select value={value} onChange={(e) => onChange(e.target.value)} className={cls}>
           {options?.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}

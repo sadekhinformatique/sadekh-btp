@@ -24,8 +24,8 @@ export default function Hero({ stats }: { stats?: any }) {
   return (
     <section className="hero-gradient text-white relative overflow-hidden">
       <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-10 left-10 w-72 h-72 bg-amber-300 rounded-full blur-3xl" />
-        <div className="absolute bottom-10 right-10 w-96 h-96 bg-green-300 rounded-full blur-3xl" />
+        <div className="absolute top-10 left-10 w-72 h-72 bg-red-300 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 right-10 w-96 h-96 bg-red-400 rounded-full blur-3xl" />
       </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 md:py-24 relative z-10">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
@@ -34,7 +34,7 @@ export default function Hero({ stats }: { stats?: any }) {
               ? (siteSettings?.heroTitleWo || t('hero.title', lang))
               : (siteSettings?.heroTitleFr || t('hero.title', lang))}
           </h1>
-          <p className="text-lg sm:text-xl text-green-100 mb-8 max-w-2xl">
+          <p className="text-lg sm:text-xl text-red-100 mb-8 max-w-2xl">
             {lang === 'wo'
               ? (siteSettings?.heroSubtitleWo || t('hero.subtitle', lang))
               : (siteSettings?.heroSubtitleFr || t('hero.subtitle', lang))}
@@ -89,7 +89,7 @@ export default function Hero({ stats }: { stats?: any }) {
           ].map((stat) => (
             <div key={stat.label}>
               <div className="text-3xl font-bold">{stat.value}</div>
-              <div className="text-green-200 text-sm">{stat.label}</div>
+              <div className="text-red-200 text-sm">{stat.label}</div>
             </div>
           ))}
         </motion.div>

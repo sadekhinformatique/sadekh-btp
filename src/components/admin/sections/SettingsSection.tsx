@@ -8,8 +8,8 @@ const DEFAULTS = {
   siteSlogan: 'La première marketplace immobilière du Sénégal',
   logoUrl: '/logo-sadekh.png',
   faviconUrl: '/favicon.ico',
-  primaryColor: '#1B5E20',
-  accentColor: '#C8A951',
+  primaryColor: '#df2531',
+  accentColor: '#000000',
   contactEmail: 'contact@sadekhbtp.sn',
   contactPhone: '+221 77 123 45 67',
   contactWhatsapp: '+221 77 123 45 67',
@@ -109,8 +109,8 @@ export default function SettingsSection() {
   if (loading) {
     return (
       <div className="space-y-5">
-        <div className="h-8 w-48 bg-green-100/50 rounded-xl animate-pulse" />
-        {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-40 bg-white rounded-2xl animate-pulse border border-green-100/50" />)}
+        <div className="h-8 w-48 bg-gray-100/50 rounded-xl animate-pulse" />
+        {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-40 bg-white rounded-2xl animate-pulse border border-gray-100" />)}
       </div>
     );
   }
@@ -119,11 +119,11 @@ export default function SettingsSection() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-green-900">Paramètres</h1>
-          <p className="text-sm text-green-600 mt-1">Configuration générale du site</p>
+          <h1 className="text-2xl font-bold text-gray-900">Paramètres</h1>
+          <p className="text-sm text-gray-600 mt-1">Configuration générale du site</p>
         </div>
         <button onClick={save} disabled={saving}
-          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-700 to-green-600 text-white rounded-xl text-sm font-medium hover:from-green-800 hover:to-green-700 transition-all disabled:opacity-50 shadow-md shadow-green-200">
+          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-red-700 to-red-600 text-white rounded-xl text-sm font-medium hover:from-red-800 hover:to-red-700 transition-all disabled:opacity-50 shadow-md shadow-red-200">
           <Save className="w-4 h-4" />
           {saving ? 'Sauvegarde...' : 'Sauvegarder'}
         </button>
@@ -131,7 +131,7 @@ export default function SettingsSection() {
 
       {message && (
         <div className={`px-4 py-3 rounded-xl text-sm font-medium border shadow-sm ${
-          message.includes('Erreur') ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+          message.includes('Erreur') ? 'bg-red-50 text-red-700 border-red-200' : 'bg-primary/10 text-primary border-primary/20'
         }`}>
           {message}
         </div>
@@ -139,12 +139,12 @@ export default function SettingsSection() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {GROUPS.map((group) => (
-          <div key={group.key} className="bg-white rounded-2xl border border-green-100/70 shadow-sm overflow-hidden">
-            <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-green-50 to-green-50/30 border-b border-green-100">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-600 to-green-500 flex items-center justify-center">
+          <div key={group.key} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-gray-50 to-gray-50/30 border-b border-gray-200">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-600 to-red-500 flex items-center justify-center">
                 <group.icon className="w-4 h-4 text-white" />
               </div>
-              <h3 className="font-bold text-green-800 text-sm">{group.label}</h3>
+              <h3 className="font-bold text-gray-800 text-sm">{group.label}</h3>
             </div>
             <div className="p-4 space-y-3">
               {group.fields?.map((f: any) => (
@@ -164,13 +164,13 @@ export default function SettingsSection() {
 function Field({ label, value, onChange, isTextarea }: { label: string; value: string; onChange: (v: string) => void; isTextarea?: boolean }) {
   return (
     <div className="space-y-1">
-      <label className="text-xs font-medium text-green-600">{label}</label>
+      <label className="text-xs font-medium text-gray-600">{label}</label>
       {isTextarea ? (
         <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={2}
-          className="w-full px-3 py-2 border border-green-200 rounded-lg text-sm text-green-900 placeholder-green-400 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all" />
+          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all" />
       ) : (
         <input value={value} onChange={(e) => onChange(e.target.value)}
-          className="w-full px-3 py-2 border border-green-200 rounded-lg text-sm text-green-900 placeholder-green-400 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all" />
+          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all" />
       )}
     </div>
   );
@@ -179,12 +179,12 @@ function Field({ label, value, onChange, isTextarea }: { label: string; value: s
 function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <div className="space-y-1">
-      <label className="text-xs font-medium text-green-600">{label}</label>
+      <label className="text-xs font-medium text-gray-600">{label}</label>
       <div className="flex gap-2">
         <input type="color" value={value} onChange={(e) => onChange(e.target.value)}
-          className="w-10 h-10 rounded-lg cursor-pointer border border-green-200" />
+          className="w-10 h-10 rounded-lg cursor-pointer border border-gray-200" />
         <input value={value} onChange={(e) => onChange(e.target.value)}
-          className="flex-1 px-3 py-2 border border-green-200 rounded-lg text-sm text-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all" />
+          className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all" />
       </div>
     </div>
   );

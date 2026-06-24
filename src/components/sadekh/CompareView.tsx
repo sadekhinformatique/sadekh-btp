@@ -49,10 +49,10 @@ export default function CompareView({
               { label: 'Pièces', render: (p: Property) => p.rooms || '—' },
               { label: 'Région', render: (p: Property) => p.region },
               { label: 'Quartier', render: (p: Property) => p.quartier },
-              { label: 'Titre foncier', render: (p: Property) => p.titleFoncier ? <Check className="w-5 h-5 text-green-600" /> : <X className="w-5 h-5 text-red-400" /> },
-              { label: 'Négociable', render: (p: Property) => p.priceNegotiable ? <Check className="w-5 h-5 text-green-600" /> : <X className="w-5 h-5 text-red-400" /> },
+              { label: 'Titre foncier', render: (p: Property) => p.titleFoncier ? <Check className="w-5 h-5 text-primary" /> : <X className="w-5 h-5 text-gray-400" /> },
+              { label: 'Négociable', render: (p: Property) => p.priceNegotiable ? <Check className="w-5 h-5 text-primary" /> : <X className="w-5 h-5 text-gray-400" /> },
               { label: 'Vues', render: (p: Property) => p.viewsCount },
-              { label: 'Premium', render: (p: Property) => p.isPremium ? <Crown className="w-5 h-5 text-amber-500" /> : <X className="w-5 h-5 text-muted-foreground" /> },
+              { label: 'Premium', render: (p: Property) => p.isPremium ? <Crown className="w-5 h-5 text-primary" /> : <X className="w-5 h-5 text-muted-foreground" /> },
             ].map((row) => (
               <tr key={row.label} className="border-t border-border">
                 <td className="p-3 font-medium text-sm text-muted-foreground">{row.label}</td>

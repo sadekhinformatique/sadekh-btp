@@ -32,10 +32,10 @@ const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.j
 const LIGHT_STYLE = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
 
 const TYPE_COLORS_MAP: Record<string, string> = {
-  maison: '#1B5E20',
-  appartement: '#1565C0',
-  terrain: '#C8A951',
-  plan: '#7B1FA2',
+  maison: '#df2531',
+  appartement: '#555555',
+  terrain: '#888888',
+  plan: '#333333',
 };
 
 const clusterLayer: any = {
@@ -44,7 +44,7 @@ const clusterLayer: any = {
   source: 'properties',
   filter: ['has', 'point_count'],
   paint: {
-    'circle-color': ['step', ['get', 'point_count'], '#2E7D32', 10, '#C8A951', 50, '#1B5E20'],
+    'circle-color': ['step', ['get', 'point_count'], '#df2531', 10, '#888888', 50, '#333333'],
     'circle-radius': ['step', ['get', 'point_count'], 18, 10, 24, 50, 30],
     'circle-stroke-width': 3,
     'circle-stroke-color': '#ffffff',
@@ -80,7 +80,7 @@ const unclusteredPointLayer: any = {
 };
 
 function PinMarker({ property, onClick }: { property: Property; onClick: () => void }) {
-  const color = TYPE_COLORS_MAP[property.type] || '#1B5E20';
+  const color = TYPE_COLORS_MAP[property.type] || '#df2531';
   const icons: Record<string, React.ReactNode> = {
     maison: <Home className="w-3 h-3" />,
     appartement: <Building2 className="w-3 h-3" />,
@@ -119,7 +119,7 @@ export default function MapView({ properties, lang, onPropertyClick }: MapViewPr
     .filter((p) => p.lat && p.lng)
     .map((p) => ({
       type: 'Feature' as const,
-      properties: { ...p, color: TYPE_COLORS_MAP[p.type] || '#1B5E20' },
+      properties: { ...p, color: TYPE_COLORS_MAP[p.type] || '#df2531' },
       geometry: { type: 'Point' as const, coordinates: [p.lng, p.lat] },
     }));
 

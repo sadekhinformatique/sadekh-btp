@@ -9,10 +9,10 @@ import { useStore } from '@/lib/store';
 import type { Property } from '@/lib/types';
 
 const TYPE_COLORS: Record<string, string> = {
-  maison: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-  appartement: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-  terrain: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-  plan: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+  maison: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  appartement: 'bg-gray-100 text-gray-800 dark:bg-gray-700/50 dark:text-gray-300',
+  terrain: 'bg-gray-200 text-gray-800 dark:bg-gray-700/50 dark:text-gray-300',
+  plan: 'bg-gray-300 text-gray-900 dark:bg-gray-600/50 dark:text-gray-200',
 };
 
 export default function PropertyDetail({
@@ -42,7 +42,7 @@ export default function PropertyDetail({
           </div>
           <div className="absolute top-4 left-4 flex gap-2">
             <Badge className={TYPE_COLORS[p.type] || ''}>{t(`filter.${p.type}`, lang)}</Badge>
-            {p.isPremium && <Badge className="bg-amber-500 text-white"><Crown className="w-3 h-3 mr-1" />Premium</Badge>}
+            {p.isPremium && <Badge className="bg-red-600 text-white"><Crown className="w-3 h-3 mr-1" />Premium</Badge>}
           </div>
           <div className="absolute top-4 right-4">
             <button onClick={() => onToggleFavorite(p.id)} className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md hover:bg-white">
@@ -102,7 +102,7 @@ export default function PropertyDetail({
 
           <div className="flex flex-wrap gap-2 mb-6">
             {p.titleFoncier && (
-              <Badge variant="outline" className="border-green-500 text-green-700 dark:text-green-400 gap-1 py-1">
+              <Badge variant="outline" className="border-red-500 text-red-700 dark:text-red-400 gap-1 py-1">
                 <Check className="w-3 h-3" /> {t('property.titleFoncier', lang)}
               </Badge>
             )}
@@ -138,7 +138,7 @@ export default function PropertyDetail({
           <div className="flex flex-col sm:flex-row gap-3">
             {p.user?.profile?.whatsapp && (
               <Button
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white gap-2 h-12 text-base"
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white gap-2 h-12 text-base"
                 onClick={() => window.open(`https://wa.me/${p.user.profile.whatsapp.replace('+', '')}?text=Bonjour, je suis intéressé par: ${encodeURIComponent(p.title)}`, '_blank')}
               >
                 <MessageCircle className="w-5 h-5" /> WhatsApp
@@ -148,12 +148,12 @@ export default function PropertyDetail({
               <Send className="w-5 h-5" /> {t('property.contact', lang)}
             </Button>
             {p.type === 'plan' && (
-              <Button variant="outline" className="flex-1 gap-2 h-12 border-amber-500 text-amber-700" onClick={() => onSetPayment(p, 'plan')}>
+              <Button variant="outline" className="flex-1 gap-2 h-12 border-red-500 text-red-700" onClick={() => onSetPayment(p, 'plan')}>
                 <CreditCard className="w-5 h-5" /> {t('detail.downloadPlan', lang)} — {formatPrice(p.price, lang)}
               </Button>
             )}
             {p.type !== 'plan' && (
-              <Button variant="outline" size="icon" className="h-12 w-12 text-amber-600 border-amber-300 hover:bg-amber-50" onClick={() => onSetPayment(p, 'boost')} title="Booster cette annonce">
+              <Button variant="outline" size="icon" className="h-12 w-12 text-red-600 border-red-300 hover:bg-red-50" onClick={() => onSetPayment(p, 'boost')} title="Booster cette annonce">
                 <Zap className="w-5 h-5" />
               </Button>
             )}
