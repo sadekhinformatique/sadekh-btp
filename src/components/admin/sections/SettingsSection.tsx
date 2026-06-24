@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Save } from 'lucide-react';
+import { Save, Globe2, Palette, Phone, Share2, Search, FileText, Coins, Settings2 } from 'lucide-react';
 
 const DEFAULTS = {
   siteName: 'SADEKH BTP',
@@ -30,6 +30,53 @@ const DEFAULTS = {
   currencySymbol: 'F',
 };
 
+const GROUPS = [
+  { key: 'identity', label: 'Identité du site', icon: Globe2, fields: [
+    { key: 'siteName', label: 'Nom du site' },
+    { key: 'siteSlogan', label: 'Slogan' },
+    { key: 'logoUrl', label: 'Logo (URL)' },
+    { key: 'faviconUrl', label: 'Favicon (URL)' },
+  ]},
+  { key: 'colors', label: 'Couleurs', icon: Palette, colorFields: [
+    { key: 'primaryColor', label: 'Couleur primaire' },
+    { key: 'accentColor', label: 'Couleur accent' },
+  ]},
+  { key: 'contact', label: 'Contact', icon: Phone, fields: [
+    { key: 'contactEmail', label: 'Email' },
+    { key: 'contactPhone', label: 'Téléphone' },
+    { key: 'contactWhatsapp', label: 'WhatsApp' },
+    { key: 'contactAddress', label: 'Adresse' },
+  ]},
+  { key: 'social', label: 'Réseaux sociaux', icon: Share2, fields: [
+    { key: 'facebook', label: 'Facebook' },
+    { key: 'instagram', label: 'Instagram' },
+    { key: 'twitter', label: 'Twitter' },
+    { key: 'youtube', label: 'YouTube' },
+    { key: 'tiktok', label: 'TikTok' },
+  ]},
+  { key: 'seo', label: 'SEO', icon: Search, fields: [
+    { key: 'seoTitle', label: 'Titre SEO' },
+    { key: 'seoDescription', label: 'Description SEO', textarea: true },
+    { key: 'seoKeywords', label: 'Mots-clés SEO' },
+  ]},
+  { key: 'contentFr', label: 'Contenu — Français', icon: FileText, fields: [
+    { key: 'heroTitleFr', label: 'Titre hero' },
+    { key: 'heroSubtitleFr', label: 'Sous-titre hero' },
+    { key: 'footerAboutFr', label: 'Footer à propos', textarea: true },
+  ]},
+  { key: 'contentWo', label: 'Contenu — Wolof', icon: FileText, fields: [
+    { key: 'heroTitleWo', label: 'Titre hero' },
+    { key: 'heroSubtitleWo', label: 'Sous-titre hero' },
+    { key: 'footerAboutWo', label: 'Footer à propos', textarea: true },
+  ]},
+  { key: 'pricing', label: 'Tarifs', icon: Coins, fields: [
+    { key: 'boostPrice', label: 'Prix boost' },
+    { key: 'premiumPrice', label: 'Prix premium' },
+    { key: 'currency', label: 'Devise' },
+    { key: 'currencySymbol', label: 'Symbole devise' },
+  ]},
+];
+
 export default function SettingsSection() {
   const [form, setForm] = useState(DEFAULTS);
   const [loading, setLoading] = useState(true);
@@ -47,118 +94,69 @@ export default function SettingsSection() {
   }, []);
 
   const save = async () => {
-    setSaving(true);
-    setMessage('');
+    setSaving(true); setMessage('');
     try {
       const res = await fetch('/api/admin/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
       if (!res.ok) throw new Error('Erreur');
-      setMessage('Paramètres sauvegardés');
+      setMessage('Paramètres sauvegardés avec succès');
       setTimeout(() => setMessage(''), 3000);
-    } catch {
-      setMessage('Erreur lors de la sauvegarde');
-    } finally {
-      setSaving(false);
-    }
+    } catch { setMessage('Erreur lors de la sauvegarde'); }
+    finally { setSaving(false); }
   };
 
   const set = (key: string, value: string) => setForm((prev) => ({ ...prev, [key]: value }));
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <div className="h-8 w-48 bg-gray-100 rounded animate-pulse" />
-        {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-32 bg-gray-100 rounded-xl animate-pulse" />)}
+      <div className="space-y-5">
+        <div className="h-8 w-48 bg-green-100/50 rounded-xl animate-pulse" />
+        {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-40 bg-white rounded-2xl animate-pulse border border-green-100/50" />)}
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Paramètres</h1>
-          <p className="text-sm text-gray-500">Configuration du site</p>
+          <h1 className="text-2xl font-bold text-green-900">Paramètres</h1>
+          <p className="text-sm text-green-600 mt-1">Configuration générale du site</p>
         </div>
-        <button onClick={save} disabled={saving} className="flex items-center gap-2 px-4 py-2 bg-emerald-700 text-white rounded-lg text-sm font-medium hover:bg-emerald-800 disabled:opacity-50">
+        <button onClick={save} disabled={saving}
+          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-700 to-green-600 text-white rounded-xl text-sm font-medium hover:from-green-800 hover:to-green-700 transition-all disabled:opacity-50 shadow-md shadow-green-200">
           <Save className="w-4 h-4" />
           {saving ? 'Sauvegarde...' : 'Sauvegarder'}
         </button>
       </div>
 
       {message && (
-        <div className={`px-4 py-3 rounded-lg text-sm font-medium ${message.includes('Erreur') ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'}`}>
+        <div className={`px-4 py-3 rounded-xl text-sm font-medium border shadow-sm ${
+          message.includes('Erreur') ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+        }`}>
           {message}
         </div>
       )}
 
-      <div className="space-y-4">
-        <Card label="Identité du site">
-          <Field label="Nom du site" value={form.siteName} onChange={(v) => set('siteName', v)} />
-          <Field label="Slogan" value={form.siteSlogan} onChange={(v) => set('siteSlogan', v)} />
-          <Field label="Logo (URL)" value={form.logoUrl} onChange={(v) => set('logoUrl', v)} />
-          <Field label="Favicon (URL)" value={form.faviconUrl} onChange={(v) => set('faviconUrl', v)} />
-        </Card>
-
-        <Card label="Couleurs">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <ColorField label="Couleur primaire" value={form.primaryColor} onChange={(v) => set('primaryColor', v)} />
-            <ColorField label="Couleur accent" value={form.accentColor} onChange={(v) => set('accentColor', v)} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {GROUPS.map((group) => (
+          <div key={group.key} className="bg-white rounded-2xl border border-green-100/70 shadow-sm overflow-hidden">
+            <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-green-50 to-green-50/30 border-b border-green-100">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-600 to-green-500 flex items-center justify-center">
+                <group.icon className="w-4 h-4 text-white" />
+              </div>
+              <h3 className="font-bold text-green-800 text-sm">{group.label}</h3>
+            </div>
+            <div className="p-4 space-y-3">
+              {group.fields?.map((f: any) => (
+                <Field key={f.key} label={f.label} value={(form as any)[f.key]} onChange={(v: string) => set(f.key, v)} isTextarea={f.textarea} />
+              ))}
+              {(group as any).colorFields?.map((f: any) => (
+                <ColorField key={f.key} label={f.label} value={(form as any)[f.key]} onChange={(v: string) => set(f.key, v)} />
+              ))}
+            </div>
           </div>
-        </Card>
-
-        <Card label="Contact">
-          <Field label="Email" value={form.contactEmail} onChange={(v) => set('contactEmail', v)} />
-          <Field label="Téléphone" value={form.contactPhone} onChange={(v) => set('contactPhone', v)} />
-          <Field label="WhatsApp" value={form.contactWhatsapp} onChange={(v) => set('contactWhatsapp', v)} />
-          <Field label="Adresse" value={form.contactAddress} onChange={(v) => set('contactAddress', v)} />
-        </Card>
-
-        <Card label="Réseaux sociaux">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Facebook" value={form.facebook} onChange={(v) => set('facebook', v)} />
-            <Field label="Instagram" value={form.instagram} onChange={(v) => set('instagram', v)} />
-            <Field label="Twitter" value={form.twitter} onChange={(v) => set('twitter', v)} />
-            <Field label="YouTube" value={form.youtube} onChange={(v) => set('youtube', v)} />
-            <Field label="TikTok" value={form.tiktok} onChange={(v) => set('tiktok', v)} />
-          </div>
-        </Card>
-
-        <Card label="SEO">
-          <Field label="Titre SEO" value={form.seoTitle} onChange={(v) => set('seoTitle', v)} />
-          <Field label="Description SEO" value={form.seoDescription} onChange={(v) => set('seoDescription', v)} isTextarea />
-          <Field label="Mots-clés SEO" value={form.seoKeywords} onChange={(v) => set('seoKeywords', v)} />
-        </Card>
-
-        <Card label="Contenu — Français">
-          <Field label="Titre hero" value={form.heroTitleFr} onChange={(v) => set('heroTitleFr', v)} />
-          <Field label="Sous-titre hero" value={form.heroSubtitleFr} onChange={(v) => set('heroSubtitleFr', v)} />
-          <Field label="Footer à propos" value={form.footerAboutFr} onChange={(v) => set('footerAboutFr', v)} isTextarea />
-        </Card>
-
-        <Card label="Contenu — Wolof">
-          <Field label="Titre hero" value={form.heroTitleWo} onChange={(v) => set('heroTitleWo', v)} />
-          <Field label="Sous-titre hero" value={form.heroSubtitleWo} onChange={(v) => set('heroSubtitleWo', v)} />
-          <Field label="Footer à propos" value={form.footerAboutWo} onChange={(v) => set('footerAboutWo', v)} isTextarea />
-        </Card>
-
-        <Card label="Tarifs">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Prix boost" value={form.boostPrice} onChange={(v) => set('boostPrice', v)} />
-            <Field label="Prix premium" value={form.premiumPrice} onChange={(v) => set('premiumPrice', v)} />
-            <Field label="Devise" value={form.currency} onChange={(v) => set('currency', v)} />
-            <Field label="Symbole devise" value={form.currencySymbol} onChange={(v) => set('currencySymbol', v)} />
-          </div>
-        </Card>
+        ))}
       </div>
-    </div>
-  );
-}
-
-function Card({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-      <h3 className="font-semibold text-gray-900">{label}</h3>
-      {children}
     </div>
   );
 }
@@ -166,11 +164,13 @@ function Card({ label, children }: { label: string; children: React.ReactNode })
 function Field({ label, value, onChange, isTextarea }: { label: string; value: string; onChange: (v: string) => void; isTextarea?: boolean }) {
   return (
     <div className="space-y-1">
-      <label className="text-sm font-medium text-gray-600">{label}</label>
+      <label className="text-xs font-medium text-green-600">{label}</label>
       {isTextarea ? (
-        <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={2} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+        <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={2}
+          className="w-full px-3 py-2 border border-green-200 rounded-lg text-sm text-green-900 placeholder-green-400 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all" />
       ) : (
-        <input value={value} onChange={(e) => onChange(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+        <input value={value} onChange={(e) => onChange(e.target.value)}
+          className="w-full px-3 py-2 border border-green-200 rounded-lg text-sm text-green-900 placeholder-green-400 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all" />
       )}
     </div>
   );
@@ -179,10 +179,12 @@ function Field({ label, value, onChange, isTextarea }: { label: string; value: s
 function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <div className="space-y-1">
-      <label className="text-sm font-medium text-gray-600">{label}</label>
+      <label className="text-xs font-medium text-green-600">{label}</label>
       <div className="flex gap-2">
-        <input type="color" value={value} onChange={(e) => onChange(e.target.value)} className="w-10 h-10 rounded cursor-pointer border border-gray-200" />
-        <input value={value} onChange={(e) => onChange(e.target.value)} className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+        <input type="color" value={value} onChange={(e) => onChange(e.target.value)}
+          className="w-10 h-10 rounded-lg cursor-pointer border border-green-200" />
+        <input value={value} onChange={(e) => onChange(e.target.value)}
+          className="flex-1 px-3 py-2 border border-green-200 rounded-lg text-sm text-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all" />
       </div>
     </div>
   );
