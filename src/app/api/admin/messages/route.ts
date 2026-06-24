@@ -1,7 +1,9 @@
 import { pool, toCamelCase } from '@/lib/supabase-server';
+import { checkAdmin } from '@/lib/admin-auth';
 import { NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request: Request) {
+  if (!await checkAdmin(request)) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
   try {
     const result = await pool.query(
       `SELECT m.*,
@@ -24,6 +26,7 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
+  if (!await checkAdmin(request)) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
   try {
     const { id, read } = await request.json();
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
@@ -41,6 +44,7 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  if (!await checkAdmin(request)) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
   try {
     const { id } = await request.json();
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });

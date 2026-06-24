@@ -73,12 +73,13 @@ export default function PropertiesSection() {
     setUploadingImg(true);
     try {
       const body = new FormData();
-      for (const f of files) body.append('files', f);
+      for (const f of files) body.append('files', f, (f as File).name);
       const res = await fetch('/api/upload', { method: 'POST', body });
       const data = await res.json();
-      if (data.urls) setImages((prev) => [...prev, ...data.urls]);
-    } catch {
-      alert("Erreur lors de l'upload");
+      if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+      if (data.urls && data.urls.length > 0) setImages((prev) => [...prev, ...data.urls]);
+    } catch (e) {
+      alert(`Erreur lors de l'upload : ${e instanceof Error ? e.message : 'Erreur inconnue'}`);
     } finally {
       setUploadingImg(false);
     }
@@ -101,20 +102,24 @@ export default function PropertiesSection() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editing ? { id: editing.id, ...payload } : payload),
       });
-      if (!res.ok) throw new Error('Erreur');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur serveur');
       setDialogOpen(false);
       load();
-    } catch { alert('Erreur lors de la sauvegarde'); }
+    } catch (e) { alert(`Erreur lors de la sauvegarde : ${e instanceof Error ? e.message : 'Erreur inconnue'}`); }
     finally { setSaving(false); }
   };
 
   const deleteProp = async (id: string) => {
-    if (!confirm('Supprimer définitivement ce bien ?')) return;
+    if (!confirm('ATTENTION : Cette action supprimera définitivement ce bien ainsi que tous ses favoris et signalements associés. Continuer ?')) return;
     try {
       const res = await fetch('/api/admin/properties', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
-      if (!res.ok) throw new Error('Erreur');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur serveur');
       load();
-    } catch { alert('Erreur lors de la suppression'); }
+    } catch (e) {
+      alert(`Erreur lors de la suppression : ${e instanceof Error ? e.message : 'Erreur inconnue'}`);
+    }
   };
 
   const togglePremium = async (id: string, premium: boolean) => {

@@ -1,7 +1,11 @@
 import { pool, toCamelCase } from '@/lib/supabase-server';
+import { checkAdmin } from '@/lib/admin-auth';
 import { NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const userId = await checkAdmin(request);
+  if (!userId) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
+
   try {
     const result = await pool.query(
       `SELECT p.*,
@@ -29,42 +33,43 @@ export async function GET() {
     return NextResponse.json({ properties });
   } catch (error) {
     console.error('Admin Properties GET error:', error);
-    return NextResponse.json({ error: 'Failed' }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur de chargement' }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
+  const userId = await checkAdmin(request);
+  if (!userId) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
+
   try {
     const body = await request.json();
     const { type, title, description, price, surface, rooms, region, city, quartier, status, images } = body;
 
-    // Résoudre user_id depuis un profil admin
-    const admin = await pool.query(`SELECT id FROM profiles WHERE role = 'admin' LIMIT 1`);
-    const userId = admin.rows[0]?.id || '00000000-0000-0000-0000-000000000000';
-
     const result = await pool.query(
       `INSERT INTO properties (user_id, type, title, description, price, price_negotiable, surface_m2, rooms, region, city, quartier, images, title_foncier, status, is_premium)
-       VALUES ($11, $1, $2, $3, $4, false, $5, $6, $7, $8, $9, $12::jsonb, false, $10, false)
+       VALUES ($1, $2, $3, $4, $5, false, $6, $7, $8, $9, $10, $11::jsonb, false, $12, false)
        RETURNING *`,
-      [type || 'maison', title, description || '', parseFloat(price) || 0,
+      [userId, type || 'maison', title, description || '', parseFloat(price) || 0,
        surface ? parseInt(surface) : null, rooms ? parseInt(rooms) : null,
-       region || 'Dakar', city || '', quartier || '', status || 'active',
-       userId, JSON.stringify(images || [])]
+       region || 'Dakar', city || '', quartier || '', JSON.stringify(images || []), status || 'active']
     );
 
     const property = toCamelCase(result.rows[0]);
     return NextResponse.json({ ...property, images: property.images || [], price: parseFloat(result.rows[0].price) }, { status: 201 });
   } catch (error) {
     console.error('Admin Properties POST error:', error);
-    return NextResponse.json({ error: 'Failed to create property' }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur lors de la création' }, { status: 500 });
   }
 }
 
 export async function PUT(request: Request) {
+  const userId = await checkAdmin(request);
+  if (!userId) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
+
   try {
     const body = await request.json();
     const { id, ...fields } = body;
-    if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+    if (!id) return NextResponse.json({ error: 'ID du bien manquant' }, { status: 400 });
 
     const setClauses: string[] = [];
     const values: any[] = [];
@@ -83,7 +88,7 @@ export async function PUT(request: Request) {
     if (fields.isPremium !== undefined) { setClauses.push(`is_premium = $${paramIdx++}`); values.push(fields.isPremium); }
     if (fields.images !== undefined) { setClauses.push(`images = $${paramIdx++}::jsonb`); values.push(JSON.stringify(fields.images)); }
 
-    if (setClauses.length === 0) return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
+    if (setClauses.length === 0) return NextResponse.json({ error: 'Aucun champ à modifier' }, { status: 400 });
 
     values.push(id);
     const result = await pool.query(
@@ -91,23 +96,38 @@ export async function PUT(request: Request) {
       values
     );
 
-    if (result.rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (result.rows.length === 0) return NextResponse.json({ error: 'Bien non trouvé' }, { status: 404 });
     return NextResponse.json(toCamelCase(result.rows[0]));
   } catch (error) {
     console.error('Admin Properties PUT error:', error);
-    return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur lors de la modification' }, { status: 500 });
   }
 }
 
 export async function DELETE(request: Request) {
+  const userId = await checkAdmin(request);
+  if (!userId) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
+
   try {
     const { id } = await request.json();
-    if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+    if (!id) return NextResponse.json({ error: 'ID du bien manquant' }, { status: 400 });
 
-    await pool.query(`DELETE FROM properties WHERE id = $1`, [id]);
+    // Supprimer les dépendances AVANT la propriété pour éviter les conflits de clés étrangères
+    await pool.query('DELETE FROM favorites WHERE property_id = $1', [id]);
+    await pool.query('DELETE FROM reports WHERE property_id = $1', [id]);
+    await pool.query('UPDATE messages SET property_id = NULL WHERE property_id = $1', [id]);
+    await pool.query('UPDATE payments SET property_id = NULL WHERE property_id = $1', [id]);
+
+    // Supprimer la propriété elle-même
+    const result = await pool.query('DELETE FROM properties WHERE id = $1 RETURNING id', [id]);
+    if (result.rows.length === 0) {
+      return NextResponse.json({ error: 'Bien non trouvé ou déjà supprimé' }, { status: 404 });
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Admin Properties DELETE error:', error);
-    return NextResponse.json({ error: 'Failed to delete' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Erreur inconnue';
+    return NextResponse.json({ error: `Échec de la suppression : ${message}` }, { status: 500 });
   }
 }

@@ -41,14 +41,15 @@ export default function PublishForm() {
     setUploading(true);
     try {
       const body = new FormData();
-      for (const f of files) body.append('files', f);
+      for (const f of files) body.append('files', f, (f as File).name);
       const res = await fetch('/api/upload', { method: 'POST', body });
       const data = await res.json();
-      if (data.urls) {
+      if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+      if (data.urls && data.urls.length > 0) {
         setPublishForm({ ...form, images: [...form.images, ...data.urls] });
       }
-    } catch {
-      alert('Erreur lors de l\'upload des images');
+    } catch (e) {
+      alert(`Erreur lors de l'upload : ${e instanceof Error ? e.message : 'Erreur inconnue'}`);
     } finally {
       setUploading(false);
     }

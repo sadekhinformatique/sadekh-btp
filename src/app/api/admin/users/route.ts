@@ -1,7 +1,9 @@
 import { pool, toCamelCase } from '@/lib/supabase-server';
+import { checkAdmin } from '@/lib/admin-auth';
 import { NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request: Request) {
+  if (!await checkAdmin(request)) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
   try {
     const result = await pool.query(
       `SELECT id, email, full_name as "fullName", phone, whatsapp, agency_name as "agencyName",
@@ -20,6 +22,7 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
+  if (!await checkAdmin(request)) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
   try {
     const body = await request.json();
     const { id, ...fields } = body;

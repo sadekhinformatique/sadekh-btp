@@ -1,4 +1,5 @@
 import { pool, toCamelCase } from '@/lib/supabase-server';
+import { checkAdmin } from '@/lib/admin-auth';
 import { NextResponse } from 'next/server';
 
 const KEY_MAP: Record<string, string> = {
@@ -49,6 +50,7 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
+  if (!await checkAdmin(request)) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
   try {
     const body = await request.json();
     const setClauses: string[] = [];
