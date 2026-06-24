@@ -9,10 +9,10 @@ import { useStore } from '@/lib/store';
 import type { Property } from '@/lib/types';
 
 const TYPE_COLORS: Record<string, string> = {
-  maison: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
-  appartement: 'bg-gray-100 text-gray-800 dark:bg-gray-700/50 dark:text-gray-300',
-  terrain: 'bg-gray-200 text-gray-800 dark:bg-gray-700/50 dark:text-gray-300',
-  plan: 'bg-gray-300 text-gray-900 dark:bg-gray-600/50 dark:text-gray-200',
+  maison: 'bg-white text-red-700 border border-red-200 shadow-sm',
+  appartement: 'bg-white text-gray-700 border border-gray-300 shadow-sm',
+  terrain: 'bg-white text-gray-700 border border-gray-300 shadow-sm',
+  plan: 'bg-white text-gray-900 border border-gray-400 shadow-sm',
 };
 
 export default function PropertyCard({
@@ -50,9 +50,9 @@ export default function PropertyCard({
           <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
             <Badge className={TYPE_COLORS[p.type] || ''}>{t(`filter.${p.type}`, lang)}</Badge>
             {p.isPremium && (
-              <Badge className="bg-red-600 text-white border-0">
+              <Badge className="bg-gradient-to-r from-red-700 to-red-600 text-white border-0 shadow-lg shadow-red-500/30">
                 <Crown className="w-3 h-3 mr-1" />
-                <span className="premium-badge font-bold">Premium</span>
+                <span className="font-bold">Premium</span>
               </Badge>
             )}
           </div>

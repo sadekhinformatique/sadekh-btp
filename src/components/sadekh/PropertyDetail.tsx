@@ -9,10 +9,10 @@ import { useStore } from '@/lib/store';
 import type { Property } from '@/lib/types';
 
 const TYPE_COLORS: Record<string, string> = {
-  maison: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
-  appartement: 'bg-gray-100 text-gray-800 dark:bg-gray-700/50 dark:text-gray-300',
-  terrain: 'bg-gray-200 text-gray-800 dark:bg-gray-700/50 dark:text-gray-300',
-  plan: 'bg-gray-300 text-gray-900 dark:bg-gray-600/50 dark:text-gray-200',
+  maison: 'bg-white text-red-700 border border-red-200 shadow-sm',
+  appartement: 'bg-white text-gray-700 border border-gray-300 shadow-sm',
+  terrain: 'bg-white text-gray-700 border border-gray-300 shadow-sm',
+  plan: 'bg-white text-gray-900 border border-gray-400 shadow-sm',
 };
 
 export default function PropertyDetail({
@@ -42,7 +42,7 @@ export default function PropertyDetail({
           </div>
           <div className="absolute top-4 left-4 flex gap-2">
             <Badge className={TYPE_COLORS[p.type] || ''}>{t(`filter.${p.type}`, lang)}</Badge>
-            {p.isPremium && <Badge className="bg-red-600 text-white"><Crown className="w-3 h-3 mr-1" />Premium</Badge>}
+            {p.isPremium && <Badge className="bg-gradient-to-r from-red-700 to-red-600 text-white border-0 shadow-lg shadow-red-500/20"><Crown className="w-3 h-3 mr-1" />Premium</Badge>}
           </div>
           <div className="absolute top-4 right-4">
             <button onClick={() => onToggleFavorite(p.id)} className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md hover:bg-white">
@@ -50,10 +50,12 @@ export default function PropertyDetail({
             </button>
           </div>
           {p.images.length > 1 && (
-            <div className="absolute bottom-4 left-4 flex gap-2 overflow-x-auto max-w-[80%]">
-              {p.images.map((img, i) => (
-                <img key={i} src={img} alt="" className="w-16 h-12 rounded-md object-cover border-2 border-white/50 cursor-pointer hover:border-white transition-colors" />
-              ))}
+            <div className="absolute bottom-4 left-4 right-4">
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {p.images.map((img, i) => (
+                  <img key={i} src={img} alt="" className="w-16 h-12 rounded-md object-cover border-2 border-white/70 shrink-0 cursor-pointer hover:border-white hover:scale-105 transition-all shadow-sm" />
+                ))}
+              </div>
             </div>
           )}
         </div>

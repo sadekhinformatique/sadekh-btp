@@ -172,7 +172,7 @@ function SadekhApp() {
               <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h2 className="text-2xl font-bold flex items-center gap-2"><Crown className="w-6 h-6 text-amber-500" /> {lang === 'fr' ? 'Annonces Premium' : 'Waxtu Premium'}</h2>
+                    <h2 className="text-2xl font-bold flex items-center gap-2"><Crown className="w-6 h-6 text-red-600" /> {lang === 'fr' ? 'Annonces Premium' : 'Waxtu Premium'}</h2>
                     <p className="text-muted-foreground text-sm mt-1">{lang === 'fr' ? 'Biens vérifiés et mis en avant par nos agents certifiés' : 'Waxtu yu jàpp, agent yu sertifikat wooynu wane'}</p>
                   </div>
                   <Button variant="outline" onClick={() => setView('listing')} className="gap-1">

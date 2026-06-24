@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -8,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Check, ChevronLeft, ChevronRight, Zap, ImageIcon, MapPin, Sparkles, Home, Building2, MapPin as MapPinIcon, FileText } from 'lucide-react';
+import { Plus, Check, ChevronLeft, ChevronRight, Zap, ImageIcon, MapPin, Sparkles, Home, Building2, MapPin as MapPinIcon, FileText, Upload, Loader2, Trash2 } from 'lucide-react';
 import { t } from '@/lib/i18n';
 import { useStore } from '@/lib/store';
 import dynamic from 'next/dynamic';
@@ -32,6 +33,30 @@ export default function PublishForm() {
   } = useStore();
 
   const form = publishForm;
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const uploadFiles = async (files: FileList | File[]) => {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    try {
+      const body = new FormData();
+      for (const f of files) body.append('files', f);
+      const res = await fetch('/api/upload', { method: 'POST', body });
+      const data = await res.json();
+      if (data.urls) {
+        setPublishForm({ ...form, images: [...form.images, ...data.urls] });
+      }
+    } catch {
+      alert('Erreur lors de l\'upload des images');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = (idx: number) => {
+    setPublishForm({ ...form, images: form.images.filter((_, i) => i !== idx) });
+  };
 
   const handleSubmit = async () => {
     setPublishing(true);
@@ -141,11 +166,47 @@ export default function PublishForm() {
         {publishStep === 3 && (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">{t('publish.step3', lang)}</h3>
-            <div className="border-2 border-dashed border-border rounded-xl p-12 text-center">
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="border-2 border-dashed border-border rounded-xl p-10 text-center cursor-pointer hover:border-primary/40 hover:bg-muted/30 transition-all"
+            >
               <ImageIcon className="w-12 h-12 mx-auto text-muted-foreground/40 mb-3" />
               <p className="text-muted-foreground mb-2">{t('publish.photos', lang)}</p>
-              <Button variant="outline" size="sm">Choisir des fichiers</Button>
+              <Button variant="outline" size="sm" type="button" disabled={uploading}>
+                {uploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Upload className="w-4 h-4 mr-2" />}
+                {uploading ? 'Upload...' : 'Choisir des fichiers'}
+              </Button>
               <p className="text-xs text-muted-foreground mt-2">JPG, PNG, WebP. Max 5MB par photo.</p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                className="hidden"
+                onChange={(e) => { if (e.target.files) uploadFiles(e.target.files); e.target.value = ''; }}
+              />
+            </div>
+            {form.images.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {form.images.map((url, i) => (
+                  <div key={url} className="relative group rounded-xl overflow-hidden border border-border aspect-[4/3]">
+                    <img src={url} alt="" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(i)}
+                      className="absolute top-2 right-2 w-8 h-8 bg-black/60 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Check className={`w-4 h-4 ${form.images.length > 0 ? 'text-green-600' : 'text-muted-foreground/40'}`} />
+              {form.images.length > 0
+                ? `${form.images.length} image${form.images.length > 1 ? 's' : ''} sélectionnée${form.images.length > 1 ? 's' : ''}`
+                : 'Aucune image sélectionnée'}
             </div>
           </div>
         )}

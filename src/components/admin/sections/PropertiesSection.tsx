@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Search, Plus, Pencil, Trash2, Crown, Eye, X, Filter } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { Search, Plus, Pencil, Trash2, Crown, Eye, X, Filter, Upload, Loader2, Trash2 as TrashIcon, ImageIcon } from 'lucide-react';
 
 const REGIONS = ['Dakar', 'Thiès', 'Saint-Louis', 'Ziguinchor', 'Kaolack', 'Rufisque', 'Louga', 'Diourbel', 'Tambacounda', 'Kolda', 'Sédhiou', 'Kédougou'];
 const PROPERTY_TYPES = ['maison', 'appartement', 'terrain', 'plan'];
@@ -33,6 +33,9 @@ export default function PropertiesSection() {
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [images, setImages] = useState<string[]>([]);
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = () => {
     setLoading(true);
@@ -52,7 +55,7 @@ export default function PropertiesSection() {
     return ms && mt && msf;
   });
 
-  const openNew = () => { setEditing(null); setForm(EMPTY_FORM); setDialogOpen(true); };
+  const openNew = () => { setEditing(null); setForm(EMPTY_FORM); setImages([]); setDialogOpen(true); };
   const openEdit = (p: any) => {
     setEditing(p);
     setForm({
@@ -61,17 +64,42 @@ export default function PropertiesSection() {
       surface: String(p.surfaceM2 || ''), rooms: String(p.rooms || ''),
       region: p.region || 'Dakar', city: p.city || '', quartier: p.quartier || '',
     });
+    setImages(p.images || []);
     setDialogOpen(true);
   };
 
+  const uploadImage = async (files: FileList | File[]) => {
+    if (!files || files.length === 0) return;
+    setUploadingImg(true);
+    try {
+      const body = new FormData();
+      for (const f of files) body.append('files', f);
+      const res = await fetch('/api/upload', { method: 'POST', body });
+      const data = await res.json();
+      if (data.urls) setImages((prev) => [...prev, ...data.urls]);
+    } catch {
+      alert("Erreur lors de l'upload");
+    } finally {
+      setUploadingImg(false);
+    }
+  };
+
+  const removeImage = (idx: number) => setImages((prev) => prev.filter((_, i) => i !== idx));
+
   const save = async () => {
     setSaving(true);
-    const body = { ...form, price: parseFloat(form.price) || 0, surface: parseFloat(form.surface) || null, rooms: parseInt(form.rooms) || null };
+    const payload = {
+      ...form,
+      price: parseFloat(form.price) || 0,
+      surface: parseFloat(form.surface) || null,
+      rooms: parseInt(form.rooms) || null,
+      images,
+    };
     try {
       const res = await fetch('/api/admin/properties', {
         method: editing ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editing ? { id: editing.id, data: body } : body),
+        body: JSON.stringify(editing ? { id: editing.id, ...payload } : payload),
       });
       if (!res.ok) throw new Error('Erreur');
       setDialogOpen(false);
@@ -211,9 +239,9 @@ export default function PropertiesSection() {
       </div>
 
       {dialogOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setDialogOpen(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto border border-gray-200" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-5 border-b border-gray-200">
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm pt-10 pb-10 overflow-y-auto" onClick={() => setDialogOpen(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 border border-gray-200" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-5 border-b border-gray-200 sticky top-0 bg-white rounded-t-2xl z-10">
               <h2 className="font-bold text-lg text-gray-900">{editing ? 'Modifier le bien' : 'Ajouter un bien'}</h2>
               <button onClick={() => setDialogOpen(false)} className="p-1.5 hover:bg-gray-100 rounded-xl transition-colors">
                 <X className="w-5 h-5 text-gray-500" />
@@ -230,14 +258,57 @@ export default function PropertiesSection() {
               <Field label="Région" select options={REGIONS.map((r) => ({ v: r, l: r }))} value={form.region} onChange={(v) => setForm({ ...form, region: v })} />
               <Field label="Ville" value={form.city} onChange={(v) => setForm({ ...form, city: v })} />
               <Field label="Quartier" value={form.quartier} onChange={(v) => setForm({ ...form, quartier: v })} />
+
+              {/* Images */}
+              <div className="col-span-2 border-t border-gray-100 pt-4 mt-2">
+                <label className="text-sm font-medium text-gray-700 mb-2 block">Images</label>
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center cursor-pointer hover:border-red-300 hover:bg-red-50/30 transition-all"
+                >
+                  <ImageIcon className="w-8 h-8 mx-auto text-gray-300 mb-2" />
+                  <p className="text-sm text-gray-500 mb-1">Cliquez pour ajouter des photos</p>
+                  <p className="text-xs text-gray-400">JPG, PNG, WebP — 5 Mo max</p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => { if (e.target.files) uploadImage(e.target.files); e.target.value = ''; }}
+                  />
+                </div>
+                {uploadingImg && (
+                  <div className="flex items-center gap-2 text-sm text-gray-500 mt-2">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Upload en cours...
+                  </div>
+                )}
+                {images.length > 0 && (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-3">
+                    {images.map((url, i) => (
+                      <div key={url} className="relative group rounded-lg overflow-hidden border border-gray-200 aspect-[4/3]">
+                        <img src={url} alt="" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(i)}
+                          className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                        >
+                          <TrashIcon className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="flex justify-end gap-3 p-5 border-t border-gray-200 bg-gray-50/30">
+            <div className="flex justify-end gap-3 p-5 border-t border-gray-200 bg-gray-50/30 rounded-b-2xl">
               <button onClick={() => setDialogOpen(false)}
                 className="px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-white rounded-xl transition-colors border border-gray-200">
                 Annuler
               </button>
               <button onClick={save} disabled={saving}
-                className="px-5 py-2.5 text-sm font-medium bg-gradient-to-r from-red-700 to-red-600 text-white rounded-xl hover:from-red-800 hover:to-red-700 transition-all disabled:opacity-50 shadow-md shadow-red-200">
+                className="px-5 py-2.5 text-sm font-medium bg-gradient-to-r from-red-700 to-red-600 text-white rounded-xl hover:from-red-800 hover:to-red-700 transition-all disabled:opacity-50 shadow-md shadow-red-200 flex items-center gap-2">
+                {saving && <Loader2 className="w-4 h-4 animate-spin" />}
                 {saving ? 'Enregistrement...' : editing ? 'Mettre à jour' : 'Créer le bien'}
               </button>
             </div>

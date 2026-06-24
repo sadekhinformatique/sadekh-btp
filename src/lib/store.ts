@@ -118,6 +118,7 @@ const initialPublishForm: PublishForm = {
   lng: '',
   titleFoncier: false,
   priceNegotiable: false,
+  images: [],
 };
 
 export const useStore = create<AppState>((set) => ({

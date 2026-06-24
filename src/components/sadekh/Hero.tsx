@@ -22,29 +22,29 @@ export default function Hero({ stats }: { stats?: any }) {
   const [query, setQuery] = useState('');
 
   return (
-    <section className="hero-gradient text-white relative overflow-hidden">
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-10 left-10 w-72 h-72 bg-red-300 rounded-full blur-3xl" />
-        <div className="absolute bottom-10 right-10 w-96 h-96 bg-red-400 rounded-full blur-3xl" />
+    <section className="relative overflow-hidden bg-gradient-to-br from-[#0a0000] via-[#1a0000] to-[#2a0000]">
+      <div className="absolute inset-0 opacity-[0.07]">
+        <div className="absolute -top-20 -left-20 w-[500px] h-[500px] bg-red-500 rounded-full blur-[120px]" />
+        <div className="absolute -bottom-20 right-10 w-[600px] h-[600px] bg-red-600 rounded-full blur-[120px]" />
       </div>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 md:py-24 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-20 md:py-28 relative z-10">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-4 max-w-4xl">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] mb-5 max-w-4xl tracking-tight">
             {lang === 'wo'
               ? (siteSettings?.heroTitleWo || t('hero.title', lang))
               : (siteSettings?.heroTitleFr || t('hero.title', lang))}
           </h1>
-          <p className="text-lg sm:text-xl text-red-100 mb-8 max-w-2xl">
+          <p className="text-lg sm:text-xl text-red-200/90 mb-10 max-w-2xl leading-relaxed">
             {lang === 'wo'
               ? (siteSettings?.heroSubtitleWo || t('hero.subtitle', lang))
               : (siteSettings?.heroSubtitleFr || t('hero.subtitle', lang))}
           </p>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="max-w-2xl">
-          <div className="flex bg-white rounded-xl shadow-xl overflow-hidden">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="max-w-xl">
+          <div className="flex bg-white rounded-2xl shadow-2xl shadow-black/20 overflow-hidden ring-1 ring-white/10">
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
                 placeholder={t('hero.search.placeholder', lang)}
@@ -56,23 +56,22 @@ export default function Hero({ stats }: { stats?: any }) {
             </div>
             <Button
               onClick={() => handleSearch(query)}
-              className="h-14 px-6 bg-primary hover:bg-primary/90 text-white rounded-none text-base font-semibold"
+              className="h-14 px-7 bg-primary hover:bg-red-700 text-white rounded-none text-base font-semibold rounded-r-2xl"
             >
-              <Search className="w-5 h-5 mr-2" />
               {t('hero.search.btn', lang)}
             </Button>
           </div>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="flex flex-wrap gap-3 mt-8">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="flex flex-wrap gap-2 mt-8">
           {(['all', 'maison', 'appartement', 'terrain', 'plan'] as PropertyType[]).map((type) => (
             <button
               key={type}
               onClick={() => { updateFilter('type', type); setView('listing'); }}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
                 filters.type === type
-                  ? 'bg-white text-primary shadow-md'
-                  : 'bg-white/15 text-white hover:bg-white/25 backdrop-blur-sm'
+                  ? 'bg-white text-red-700 shadow-lg shadow-red-500/20'
+                  : 'bg-white/10 text-white/80 hover:bg-white/20 backdrop-blur-sm border border-white/10'
               }`}
             >
               {TYPE_ICONS[type] || <Grid3X3 className="w-4 h-4" />}

@@ -36,7 +36,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { type, title, description, price, surface, rooms, region, city, quartier, status } = body;
+    const { type, title, description, price, surface, rooms, region, city, quartier, status, images } = body;
 
     // Résoudre user_id depuis un profil admin
     const admin = await pool.query(`SELECT id FROM profiles WHERE role = 'admin' LIMIT 1`);
@@ -44,16 +44,16 @@ export async function POST(request: Request) {
 
     const result = await pool.query(
       `INSERT INTO properties (user_id, type, title, description, price, price_negotiable, surface_m2, rooms, region, city, quartier, images, title_foncier, status, is_premium)
-       VALUES ($11, $1, $2, $3, $4, false, $5, $6, $7, $8, $9, '[]'::jsonb, false, $10, false)
+       VALUES ($11, $1, $2, $3, $4, false, $5, $6, $7, $8, $9, $12::jsonb, false, $10, false)
        RETURNING *`,
       [type || 'maison', title, description || '', parseFloat(price) || 0,
        surface ? parseInt(surface) : null, rooms ? parseInt(rooms) : null,
        region || 'Dakar', city || '', quartier || '', status || 'active',
-       userId]
+       userId, JSON.stringify(images || [])]
     );
 
     const property = toCamelCase(result.rows[0]);
-    return NextResponse.json({ ...property, images: [], price: parseFloat(result.rows[0].price) }, { status: 201 });
+    return NextResponse.json({ ...property, images: property.images || [], price: parseFloat(result.rows[0].price) }, { status: 201 });
   } catch (error) {
     console.error('Admin Properties POST error:', error);
     return NextResponse.json({ error: 'Failed to create property' }, { status: 500 });
@@ -81,6 +81,7 @@ export async function PUT(request: Request) {
     if (fields.quartier !== undefined) { setClauses.push(`quartier = $${paramIdx++}`); values.push(fields.quartier); }
     if (fields.status !== undefined) { setClauses.push(`status = $${paramIdx++}`); values.push(fields.status); }
     if (fields.isPremium !== undefined) { setClauses.push(`is_premium = $${paramIdx++}`); values.push(fields.isPremium); }
+    if (fields.images !== undefined) { setClauses.push(`images = $${paramIdx++}::jsonb`); values.push(JSON.stringify(fields.images)); }
 
     if (setClauses.length === 0) return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
 

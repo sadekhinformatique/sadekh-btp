@@ -95,6 +95,7 @@ export interface PublishForm {
   lng: string;
   titleFoncier: boolean;
   priceNegotiable: boolean;
+  images: string[];
 }
 
 export interface AlertForm {
