@@ -112,13 +112,8 @@ export async function DELETE(request: Request) {
     const { id } = await request.json();
     if (!id) return NextResponse.json({ error: 'ID du bien manquant' }, { status: 400 });
 
-    // Supprimer les dépendances AVANT la propriété pour éviter les conflits de clés étrangères
-    await pool.query('DELETE FROM favorites WHERE property_id = $1', [id]);
-    await pool.query('DELETE FROM reports WHERE property_id = $1', [id]);
-    await pool.query('UPDATE messages SET property_id = NULL WHERE property_id = $1', [id]);
-    await pool.query('UPDATE payments SET property_id = NULL WHERE property_id = $1', [id]);
-
-    // Supprimer la propriété elle-même
+    // La contrainte ON DELETE CASCADE supprime automatiquement les favoris et signalements
+    // La contrainte ON DELETE SET NULL met automatiquement property_id = NULL sur les messages et paiements
     const result = await pool.query('DELETE FROM properties WHERE id = $1 RETURNING id', [id]);
     if (result.rows.length === 0) {
       return NextResponse.json({ error: 'Bien non trouvé ou déjà supprimé' }, { status: 404 });
