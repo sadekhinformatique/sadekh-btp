@@ -25,12 +25,12 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   try {
-    const { id, readAt } = await request.json();
+    const { id, read } = await request.json();
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
     const result = await pool.query(
       `UPDATE messages SET read_at = $1 WHERE id = $2 RETURNING *`,
-      [readAt ? new Date(readAt).toISOString() : new Date().toISOString(), id]
+      [read ? new Date().toISOString() : null, id]
     );
 
     return NextResponse.json(toCamelCase(result.rows[0]));
@@ -42,8 +42,7 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
+    const { id } = await request.json();
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
     await pool.query(`DELETE FROM messages WHERE id = $1`, [id]);

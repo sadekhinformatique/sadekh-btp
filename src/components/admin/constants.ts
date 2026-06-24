@@ -10,11 +10,11 @@ export const TYPE_LABELS: Record<string, string> = {
 };
 
 export const STATUS_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  active: 'default', pending: 'secondary', sold: 'destructive', archived: 'outline',
+  active: 'default', draft: 'outline', sold: 'destructive', suspended: 'secondary',
 };
 
 export const STATUS_LABELS: Record<string, string> = {
-  active: 'Actif', pending: 'En attente', sold: 'Vendu', archived: 'Archivé',
+  active: 'Actif', draft: 'Brouillon', sold: 'Vendu', suspended: 'Suspendu',
 };
 
 export const formatPrice = (price: number | string) => {

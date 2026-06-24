@@ -36,15 +36,20 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { type, title, description, price, surfaceM2, rooms, region, city, quartier, status } = body;
+    const { type, title, description, price, surface, rooms, region, city, quartier, status } = body;
+
+    // Résoudre user_id depuis un profil admin
+    const admin = await pool.query(`SELECT id FROM profiles WHERE role = 'admin' LIMIT 1`);
+    const userId = admin.rows[0]?.id || '00000000-0000-0000-0000-000000000000';
 
     const result = await pool.query(
       `INSERT INTO properties (user_id, type, title, description, price, price_negotiable, surface_m2, rooms, region, city, quartier, images, title_foncier, status, is_premium)
-       VALUES ('00000000-0000-0000-0000-000000000000', $1, $2, $3, $4, false, $5, $6, $7, $8, $9, '[]'::jsonb, false, $10, false)
+       VALUES ($11, $1, $2, $3, $4, false, $5, $6, $7, $8, $9, '[]'::jsonb, false, $10, false)
        RETURNING *`,
       [type || 'maison', title, description || '', parseFloat(price) || 0,
-       surfaceM2 ? parseInt(surfaceM2) : null, rooms ? parseInt(rooms) : null,
-       region || 'Dakar', city || '', quartier || '', status || 'active']
+       surface ? parseInt(surface) : null, rooms ? parseInt(rooms) : null,
+       region || 'Dakar', city || '', quartier || '', status || 'active',
+       userId]
     );
 
     const property = toCamelCase(result.rows[0]);
@@ -69,7 +74,7 @@ export async function PUT(request: Request) {
     if (fields.type !== undefined) { setClauses.push(`type = $${paramIdx++}`); values.push(fields.type); }
     if (fields.description !== undefined) { setClauses.push(`description = $${paramIdx++}`); values.push(fields.description); }
     if (fields.price !== undefined) { setClauses.push(`price = $${paramIdx++}`); values.push(parseFloat(fields.price)); }
-    if (fields.surfaceM2 !== undefined) { setClauses.push(`surface_m2 = $${paramIdx++}`); values.push(fields.surfaceM2 ? parseInt(fields.surfaceM2) : null); }
+    if (fields.surface !== undefined) { setClauses.push(`surface_m2 = $${paramIdx++}`); values.push(fields.surface ? parseInt(fields.surface) : null); }
     if (fields.rooms !== undefined) { setClauses.push(`rooms = $${paramIdx++}`); values.push(fields.rooms ? parseInt(fields.rooms) : null); }
     if (fields.region !== undefined) { setClauses.push(`region = $${paramIdx++}`); values.push(fields.region); }
     if (fields.city !== undefined) { setClauses.push(`city = $${paramIdx++}`); values.push(fields.city); }
@@ -95,8 +100,7 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
+    const { id } = await request.json();
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
     await pool.query(`DELETE FROM properties WHERE id = $1`, [id]);

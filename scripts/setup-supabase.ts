@@ -172,6 +172,44 @@ async function main() {
     `);
     console.log("  ✅ property_alerts");
 
+    // 8. site_settings
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS site_settings (
+        id INTEGER PRIMARY KEY DEFAULT 1,
+        site_name TEXT DEFAULT 'SADEKH BTP',
+        site_tagline TEXT DEFAULT 'La première marketplace immobilière du Sénégal',
+        logo_url TEXT DEFAULT '/logo-sadekh.png',
+        favicon_url TEXT DEFAULT '/favicon.ico',
+        primary_color TEXT DEFAULT '#1B5E20',
+        accent_color TEXT DEFAULT '#C8A951',
+        contact_email TEXT DEFAULT 'contact@sadekhbtp.sn',
+        contact_phone TEXT DEFAULT '+221 77 123 45 67',
+        contact_whatsapp TEXT DEFAULT '+221 77 123 45 67',
+        contact_address TEXT DEFAULT 'Dakar, Sénégal',
+        facebook_url TEXT DEFAULT '',
+        instagram_url TEXT DEFAULT '',
+        twitter_url TEXT DEFAULT '',
+        youtube_url TEXT DEFAULT '',
+        tiktok_url TEXT DEFAULT '',
+        seo_title TEXT DEFAULT 'SADEKH BTP - Marketplace Immobilière Sénégal',
+        seo_description TEXT DEFAULT 'Découvrez les meilleures offres immobilières au Sénégal sur SADEKH BTP.',
+        seo_keywords TEXT DEFAULT 'immobilier, Sénégal, Dakar, maison, appartement, terrain',
+        hero_title_fr TEXT DEFAULT 'Trouvez votre bien idéal au Sénégal',
+        hero_subtitle_fr TEXT DEFAULT 'Des milliers de biens immobiliers vous attendent',
+        hero_title_wo TEXT DEFAULT 'Jëf jëf ndax biir Sénégal',
+        hero_subtitle_wo TEXT DEFAULT 'Immobilier bu baax, bu am solo',
+        footer_about_fr TEXT DEFAULT 'SADEKH BTP est la première marketplace immobilière du Sénégal.',
+        footer_about_wo TEXT DEFAULT 'SADEKH BTP mooy marketplace bu njëkk bi ci Sénégal.',
+        boost_price NUMERIC(15,2) DEFAULT 2500,
+        premium_price NUMERIC(15,2) DEFAULT 5000,
+        currency TEXT DEFAULT 'FCFA',
+        currency_symbol TEXT DEFAULT 'F',
+        updated_at TIMESTAMPTZ DEFAULT now(),
+        CONSTRAINT site_settings_single_row CHECK (id = 1)
+      );
+    `);
+    console.log("  ✅ site_settings");
+
     // ============================================
     // CREATE updated_at TRIGGERS
     // ============================================
@@ -184,6 +222,7 @@ async function main() {
       "payments",
       "reports",
       "property_alerts",
+      "site_settings",
     ];
     for (const table of triggerTables) {
       await client.query(`
@@ -238,6 +277,7 @@ async function main() {
       "payments",
       "reports",
       "property_alerts",
+      "site_settings",
     ];
     for (const table of rlsTables) {
       await client.query(`ALTER TABLE ${table} ENABLE ROW LEVEL SECURITY;`);

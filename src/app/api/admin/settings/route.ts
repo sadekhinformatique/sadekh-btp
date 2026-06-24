@@ -36,9 +36,12 @@ const NUMERIC_COLUMNS = new Set(['boost_price', 'premium_price']);
 
 export async function GET() {
   try {
+    // Crée la ligne par défaut si elle n'existe pas
+    await pool.query(
+      `INSERT INTO site_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING`
+    );
     const result = await pool.query(`SELECT * FROM site_settings WHERE id = 1`);
-    if (result.rows[0]) return NextResponse.json(toCamelCase(result.rows[0]));
-    return NextResponse.json({ error: 'Non configuré' }, { status: 404 });
+    return NextResponse.json(toCamelCase(result.rows[0]));
   } catch (error) {
     console.error('Settings GET error:', error);
     return NextResponse.json({ error: 'Échec' }, { status: 500 });
@@ -61,6 +64,11 @@ export async function PUT(request: Request) {
     }
 
     if (setClauses.length === 0) return NextResponse.json({ error: 'Aucun champ' }, { status: 400 });
+
+    // UPSERT : crée la ligne si elle n'existe pas (id=1)
+    await pool.query(
+      `INSERT INTO site_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING`
+    );
 
     const result = await pool.query(
       `UPDATE site_settings SET ${setClauses.join(', ')}, updated_at = NOW() WHERE id = 1 RETURNING *`,

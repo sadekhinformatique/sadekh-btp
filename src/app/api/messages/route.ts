@@ -25,20 +25,33 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { senderId, receiverId, propertyId, content } = await request.json();
+    const body = await request.json();
+    // Support deux formats :
+    // 1) admin reply : { propertyId, content, toEmail }
+    // 2) client form : { senderId, receiverId, propertyId, content }
+    const { senderId, receiverId, propertyId, content, toEmail } = body;
 
-    // Resolve sender from email if needed
+    // Resolve sender (admin qui répond)
     let actualSenderId = senderId;
     if (!actualSenderId) {
-      const sender = await pool.query(`SELECT id FROM profiles WHERE email = 'acheteur@sadekh.sn'`);
-      actualSenderId = sender.rows[0]?.id;
+      const adminEmail = await pool.query(`SELECT id FROM profiles WHERE role = 'admin' LIMIT 1`);
+      actualSenderId = adminEmail.rows[0]?.id;
     }
     if (!actualSenderId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+
+    // Resolve receiver from toEmail si fourni
+    let actualReceiverId = receiverId;
+    if (!actualReceiverId && toEmail) {
+      const receiver = await pool.query(`SELECT id FROM profiles WHERE email = $1`, [toEmail]);
+      actualReceiverId = receiver.rows[0]?.id;
+    }
+
+    if (!actualReceiverId) return NextResponse.json({ error: 'Receiver not found' }, { status: 404 });
 
     const result = await pool.query(
       `INSERT INTO messages (sender_id, receiver_id, property_id, content) VALUES ($1, $2, $3, $4)
        RETURNING *`,
-      [actualSenderId, receiverId, propertyId || null, content]
+      [actualSenderId, actualReceiverId, propertyId || null, content]
     );
 
     const message = toCamelCase(result.rows[0]);
