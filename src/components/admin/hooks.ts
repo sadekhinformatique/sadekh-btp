@@ -107,19 +107,19 @@ export function useAdmin(onBack: () => void, siteSettings: any, onSettingsSaved:
     enabled: isAdmin === true,
   });
 
-  const { data: properties, isLoading: propsLoading } = useQuery({
+  const { data: propertiesData, isLoading: propsLoading } = useQuery({
     queryKey: ['admin-properties'],
     queryFn: () => fetchApi('/api/admin/properties'),
     enabled: isAdmin === true,
   });
 
-  const { data: messages, isLoading: msgsLoading } = useQuery({
+  const { data: messagesData, isLoading: msgsLoading } = useQuery({
     queryKey: ['admin-messages'],
     queryFn: () => fetchApi('/api/admin/messages'),
     enabled: isAdmin === true,
   });
 
-  const { data: users, isLoading: usersLoading } = useQuery({
+  const { data: usersData, isLoading: usersLoading } = useQuery({
     queryKey: ['admin-users'],
     queryFn: () => fetchApi('/api/admin/users'),
     enabled: isAdmin === true,
@@ -134,6 +134,10 @@ export function useAdmin(onBack: () => void, siteSettings: any, onSettingsSaved:
   useEffect(() => {
     if (settingsData) setSettingsForm({ ...DEFAULT_SETTINGS, ...settingsData });
   }, [settingsData]);
+
+  const properties = Array.isArray(propertiesData?.properties) ? propertiesData.properties : [];
+  const messages = Array.isArray(messagesData?.messages) ? messagesData.messages : [];
+  const users = Array.isArray(usersData?.users) ? usersData.users : [];
 
   /* ===== Mutations ===== */
   const createProperty = useMutation({
