@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { LayoutDashboard, Building2, MessageSquare, Users, Settings, LogOut, Menu, X } from 'lucide-react';
 import OverviewSection from './sections/OverviewSection';
 import PropertiesSection from './sections/PropertiesSection';
@@ -19,6 +20,7 @@ const TABS = [
 type TabId = typeof TABS[number]['id'];
 
 export default function AdminLayout({ user }: { user: any }) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const ActiveSection = TABS.find((t) => t.id === activeTab)!.comp;
@@ -84,13 +86,25 @@ export default function AdminLayout({ user }: { user: any }) {
               <p className="text-xs text-gray-500 truncate">{user?.email}</p>
             </div>
           </div>
-          <a
-            href="/"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-600 hover:bg-white hover:text-red-700 transition-all mt-1 group"
-          >
-            <LogOut className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-            <span>Retour au site</span>
-          </a>
+          <div className="flex gap-1 mt-1">
+            <a
+              href="/"
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm text-gray-600 hover:bg-white hover:text-red-700 transition-all group"
+            >
+              <LogOut className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+              <span>Site</span>
+            </a>
+            <button
+              onClick={async () => {
+                await fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'logout' }) });
+                router.push('/admin/login');
+              }}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm text-red-600 hover:bg-red-50 transition-all"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Déconnexion</span>
+            </button>
+          </div>
         </div>
       </aside>
 
