@@ -1,5 +1,5 @@
 export type Lang = 'fr' | 'wo';
-export type View = 'home' | 'listing' | 'favorites' | 'messages' | 'publish' | 'dashboard' | 'admin' | 'compare' | 'plans' | 'map';
+export type View = 'home' | 'listing' | 'favorites' | 'messages' | 'publish' | 'dashboard' | 'compare' | 'plans' | 'map';
 export type PropertyType = 'all' | 'maison' | 'appartement' | 'terrain' | 'plan';
 export type ListingView = 'grid' | 'map';
 export type PaymentType = 'boost' | 'plan' | 'premium';

@@ -25,7 +25,6 @@ import PropertyDetail from '@/components/sadekh/PropertyDetail';
 import Hero from '@/components/sadekh/Hero';
 import PublishForm from '@/components/sadekh/PublishForm';
 import Dashboard from '@/components/sadekh/Dashboard';
-import AdminView from '@/components/sadekh/AdminView';
 import FavoritesView from '@/components/sadekh/FavoritesView';
 import MessagesView from '@/components/sadekh/MessagesView';
 import CompareView from '@/components/sadekh/CompareView';
@@ -325,12 +324,6 @@ function SadekhApp() {
                 onToggleCompare={useStore.getState().toggleCompare}
                 onOpenProperty={openProperty}
               />
-            </motion.div>
-          )}
-
-          {view === 'admin' && (
-            <motion.div key="admin" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <AdminView stats={stats} />
             </motion.div>
           )}
 

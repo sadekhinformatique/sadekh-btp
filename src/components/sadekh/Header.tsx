@@ -27,9 +27,6 @@ export default function Header() {
     { id: 'favorites', label: 'nav.favorites', icon: <Heart className="w-4 h-4" /> },
     { id: 'messages', label: 'nav.messages', icon: <MessageCircle className="w-4 h-4" /> },
     { id: 'dashboard', label: 'nav.dashboard', icon: <BarChart3 className="w-4 h-4" /> },
-    ...(currentUser?.profile?.role === 'admin'
-      ? [{ id: 'admin' as View, label: 'nav.admin', icon: <Shield className="w-4 h-4" /> }]
-      : []),
   ];
 
   const mobileNav: { id: View; label: string; icon: React.ReactNode }[] = [
@@ -40,9 +37,6 @@ export default function Header() {
     { id: 'messages', label: 'nav.messages', icon: <MessageCircle className="w-5 h-5" /> },
     { id: 'publish', label: 'nav.publish', icon: <Plus className="w-5 h-5" /> },
     { id: 'dashboard', label: 'nav.dashboard', icon: <BarChart3 className="w-5 h-5" /> },
-    ...(currentUser?.profile?.role === 'admin'
-      ? [{ id: 'admin' as View, label: 'nav.admin', icon: <Shield className="w-5 h-5" /> }]
-      : []),
   ];
 
   const handleNavClick = (id: View) => {
@@ -105,7 +99,7 @@ export default function Header() {
                 </div>
                 <span className="hidden sm:inline max-w-[80px] truncate">{currentUser.profile?.fullName || currentUser.name}</span>
                 {currentUser.profile?.role === 'admin' && (
-                  <Badge variant="default" className="text-[9px] px-1 h-4">Admin</Badge>
+                  <Badge variant="default" className="text-[9px] px-1 h-4 cursor-pointer hover:opacity-80" onClick={() => window.location.href = '/admin'}>Admin</Badge>
                 )}
                 <LogOut className="w-3 h-3" />
               </Button>
